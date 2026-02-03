@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Bookmarks - Lite</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="App">
+    <!-- ヘッダー部分 -->
+    <header class="main-header">
+      <div class="title-header">
+        <div class="title-left">
+          <h1 id="main-title" onclick="editMainTitle()">My Bookmarks</h1>
+          <input type="text" id="main-title-input" class="title-input" onblur="saveMainTitle()" onkeypress="handleMainTitleKeypress(event)" />
+        </div>
+        <div class="title-right">
+          <div id="header-links-container">
+            <!-- ヘッダーリンクは動的に生成されます -->
+          </div>
+          <button class="action-btn edit-btn" onclick="editHeaderLinks()" title="ヘッダーリンク編集">✏️</button>
+          <button class="action-btn export-btn" onclick="exportData()" title="データをエクスポート">💾</button>
+          <label class="action-btn import-btn" title="データをインポート">
+            📂
+            <input type="file" id="import-file" accept=".json" onchange="importData(event)" style="display: none;">
+          </label>
+        </div>
+      </div>
+    </header>
+
+    <main id="main-content">
+      <div id="main-view" class="view active">
+        <div class="section-grid">
+          <!-- 固定で6セクションを作成 -->
+          <div class="section enhanced-section" id="section1">
+            <div class="section-header">
+              <div class="section-title-area">
+                <h2 onclick="editSectionName('section1')" class="section-title-text">セクション1</h2>
+                <input type="text" id="section1-input" class="section-name-input" onblur="saveSectionName('section1')" />
+              </div>
+              <div class="section-actions">
+                <button class="action-btn edit-btn" onclick="editLinks('section1')" title="編集">✏️</button>
+              </div>
+            </div>
+            <div class="link-grid">
+              <!-- リンクは動的に生成されます -->
+            </div>
+          </div>
+
+          <div class="section enhanced-section" id="section2">
+            <div class="section-header">
+              <div class="section-title-area">
+                <h2 onclick="editSectionName('section2')" class="section-title-text">セクション2</h2>
+                <input type="text" id="section2-input" class="section-name-input" onblur="saveSectionName('section2')" />
+              </div>
+              <div class="section-actions">
+                <button class="action-btn edit-btn" onclick="editLinks('section2')" title="編集">✏️</button>
+              </div>
+            </div>
+            <div class="link-grid">
+              <!-- リンクは動的に生成されます -->
+            </div>
+          </div>
+
+          <div class="section enhanced-section" id="section3">
+            <div class="section-header">
+              <div class="section-title-area">
+                <h2 onclick="editSectionName('section3')" class="section-title-text">セクション3</h2>
+                <input type="text" id="section3-input" class="section-name-input" onblur="saveSectionName('section3')" />
+              </div>
+              <div class="section-actions">
+                <button class="action-btn edit-btn" onclick="editLinks('section3')" title="編集">✏️</button>
+              </div>
+            </div>
+            <div class="link-grid">
+              <!-- リンクは動的に生成されます -->
+            </div>
+          </div>
+
+          <div class="section enhanced-section" id="section4">
+            <div class="section-header">
+              <div class="section-title-area">
+                <h2 onclick="editSectionName('section4')" class="section-title-text">セクション4</h2>
+                <input type="text" id="section4-input" class="section-name-input" onblur="saveSectionName('section4')" />
+              </div>
+              <div class="section-actions">
+                <button class="action-btn edit-btn" onclick="editLinks('section4')" title="編集">✏️</button>
+              </div>
+            </div>
+            <div class="link-grid">
+              <!-- リンクは動的に生成されます -->
+            </div>
+          </div>
+
+          <div class="section enhanced-section" id="section5">
+            <div class="section-header">
+              <div class="section-title-area">
+                <h2 onclick="editSectionName('section5')" class="section-title-text">セクション5</h2>
+                <input type="text" id="section5-input" class="section-name-input" onblur="saveSectionName('section5')" />
+              </div>
+              <div class="section-actions">
+                <button class="action-btn edit-btn" onclick="editLinks('section5')" title="編集">✏️</button>
+              </div>
+            </div>
+            <div class="link-grid">
+              <!-- リンクは動的に生成されます -->
+            </div>
+          </div>
+
+          <div class="section enhanced-section" id="section6">
+            <div class="section-header">
+              <div class="section-title-area">
+                <h2 onclick="editSectionName('section6')" class="section-title-text">セクション6</h2>
+                <input type="text" id="section6-input" class="section-name-input" onblur="saveSectionName('section6')" />
+              </div>
+              <div class="section-actions">
+                <button class="action-btn edit-btn" onclick="editLinks('section6')" title="編集">✏️</button>
+              </div>
+            </div>
+            <div class="link-grid">
+              <!-- リンクは動的に生成されます -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- リンク編集モーダル -->
+  <div id="edit-links-modal" class="modal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>リンクを編集</h2>
+          <button class="close-btn" onclick="closeModal('edit-links-modal')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="section-name-edit">
+            <label>セクション名:</label>
+            <input type="text" id="edit-section-name" class="input-field" />
+            <button class="btn btn-primary" onclick="saveEditedSectionName()">保存</button>
+          </div>
+
+          <div class="links-list" id="modal-links-list">
+            <!-- リンク一覧は動的に生成されます -->
+          </div>
+
+          <button class="btn btn-primary add-link-btn" onclick="addLink()">+ 新しいリンクを追加</button>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="closeModal('edit-links-modal')">閉じる</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ヘッダーリンク編集モーダル -->
+  <div id="edit-header-links-modal" class="modal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>ヘッダーリンクを編集</h2>
+          <button class="close-btn" onclick="closeModal('edit-header-links-modal')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="links-list" id="header-links-list">
+            <!-- ヘッダーリンク一覧は動的に生成されます -->
+          </div>
+
+          <button class="btn btn-primary add-link-btn" onclick="addHeaderLink()">+ 新しいリンクを追加</button>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="closeModal('edit-header-links-modal')">閉じる</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/storage-manager.js"></script>
+  <script src="js/script.js"></script>
+</body>
+</html>
