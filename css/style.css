@@ -100,6 +100,80 @@ body {
 }
 
 /* ====================================
+   ページタブ
+   ==================================== */
+
+.page-tabs {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 0;
+  flex-wrap: wrap;
+}
+
+#page-tabs-container {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.page-tab {
+  background-color: #666;
+  color: white;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.page-tab:hover {
+  background-color: #555;
+}
+
+.page-tab.active {
+  background-color: #333;
+  border: 2px solid #999;
+}
+
+.page-tab-delete {
+  font-size: 16px;
+  font-weight: bold;
+  color: #ccc;
+  margin-left: 4px;
+}
+
+.page-tab-delete:hover {
+  color: #fff;
+}
+
+.add-page-btn {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: bold;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-page-btn:hover {
+  background-color: #45a049;
+  transform: scale(1.1);
+}
+
+/* ====================================
    メインコンテンツ
    ==================================== */
 

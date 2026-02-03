@@ -27,6 +27,14 @@
           </label>
         </div>
       </div>
+
+      <!-- ページタブ -->
+      <nav class="page-tabs">
+        <div id="page-tabs-container">
+          <!-- ページタブは動的に生成されます -->
+        </div>
+        <button class="add-page-btn" onclick="addNewPage()" title="新しいページを追加">+</button>
+      </nav>
     </header>
 
     <main id="main-content">
@@ -173,6 +181,27 @@
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" onclick="closeModal('edit-header-links-modal')">閉じる</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ページ削除確認モーダル -->
+  <div id="delete-page-modal" class="modal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>ページを削除</h2>
+          <button class="close-btn" onclick="closeModal('delete-page-modal')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p>このページを削除しますか？</p>
+          <p><strong id="delete-page-name"></strong></p>
+          <p style="color: #f44336;">※ このページのすべてのデータが削除されます。この操作は取り消せません。</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="closeModal('delete-page-modal')">キャンセル</button>
+          <button class="btn btn-danger" onclick="confirmDeletePage()">削除</button>
         </div>
       </div>
     </div>

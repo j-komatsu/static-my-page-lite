@@ -5,6 +5,8 @@
 // グローバル変数
 let currentEditingSectionId = null;
 let draggedLinkIndex = null;
+let currentPageId = 'main';
+let pageToDelete = null;
 
 // =====================================
 // 初期化
@@ -62,10 +64,25 @@ function getDefaultData() {
   };
 }
 
+function getDefaultPageData(pageName) {
+  return {
+    title: pageName,
+    sections: {
+      'section1': { name: 'セクション1', links: [] },
+      'section2': { name: 'セクション2', links: [] },
+      'section3': { name: 'セクション3', links: [] },
+      'section4': { name: 'セクション4', links: [] },
+      'section5': { name: 'セクション5', links: [] },
+      'section6': { name: 'セクション6', links: [] }
+    }
+  };
+}
+
 function loadData() {
-  const data = storageManager.get('liteData');
+  const key = currentPageId === 'main' ? 'liteData' : `liteData_${currentPageId}`;
+  const data = storageManager.get(key);
   if (!data) {
-    const defaultData = getDefaultData();
+    const defaultData = currentPageId === 'main' ? getDefaultData() : getDefaultPageData(currentPageId);
     saveData(defaultData);
     return defaultData;
   }
@@ -73,11 +90,26 @@ function loadData() {
 }
 
 function saveData(data) {
-  storageManager.set('liteData', data, true);
+  const key = currentPageId === 'main' ? 'liteData' : `liteData_${currentPageId}`;
+  storageManager.set(key, data, true);
 }
 
 function getData() {
   return loadData();
+}
+
+function getAllPages() {
+  const pages = storageManager.get('litePages');
+  if (!pages) {
+    const defaultPages = ['main'];
+    storageManager.set('litePages', defaultPages, true);
+    return defaultPages;
+  }
+  return pages;
+}
+
+function savePages(pages) {
+  storageManager.set('litePages', pages, true);
 }
 
 // =====================================
@@ -96,8 +128,15 @@ function renderAll() {
     renderSection(sectionId);
   });
 
-  // ヘッダーリンク
-  renderHeaderLinks();
+  // ヘッダーリンク（メインページのみ）
+  if (currentPageId === 'main') {
+    renderHeaderLinks();
+  } else {
+    document.getElementById('header-links-container').innerHTML = '';
+  }
+
+  // ページタブ
+  renderPageTabs();
 }
 
 function renderSection(sectionId) {
@@ -517,6 +556,12 @@ function addHeaderLink() {
     data.headerLinks = [];
   }
 
+  // 最大5個まで制限
+  if (data.headerLinks.length >= 5) {
+    alert('ヘッダーリンクは最大5個までです');
+    return;
+  }
+
   data.headerLinks.push({
     text: '新しいリンク',
     url: 'https://example.com'
@@ -615,6 +660,113 @@ function closeModal(modalId) {
   if (modal) {
     modal.style.display = 'none';
   }
+}
+
+// =====================================
+// ページ管理
+// =====================================
+
+function renderPageTabs() {
+  const pages = getAllPages();
+  const container = document.getElementById('page-tabs-container');
+
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  pages.forEach(pageId => {
+    const tab = document.createElement('button');
+    tab.className = 'page-tab' + (pageId === currentPageId ? ' active' : '');
+    tab.textContent = pageId === 'main' ? 'メイン' : pageId;
+    tab.onclick = () => switchPage(pageId);
+
+    // 削除ボタン（メインページ以外）
+    if (pageId !== 'main') {
+      const deleteBtn = document.createElement('span');
+      deleteBtn.className = 'page-tab-delete';
+      deleteBtn.textContent = '×';
+      deleteBtn.onclick = (e) => {
+        e.stopPropagation();
+        showDeletePageDialog(pageId);
+      };
+      tab.appendChild(deleteBtn);
+    }
+
+    container.appendChild(tab);
+  });
+}
+
+function switchPage(pageId) {
+  currentPageId = pageId;
+  renderAll();
+}
+
+function addNewPage() {
+  const pageName = prompt('新しいページ名を入力してください:');
+
+  if (!pageName) return;
+
+  if (pageName.trim() === '') {
+    alert('ページ名を入力してください');
+    return;
+  }
+
+  if (pageName === 'main') {
+    alert('このページ名は使用できません');
+    return;
+  }
+
+  const pages = getAllPages();
+
+  // 重複チェック
+  if (pages.includes(pageName)) {
+    alert('このページ名は既に使用されています');
+    return;
+  }
+
+  // ページを追加
+  pages.push(pageName);
+  savePages(pages);
+
+  // 新しいページのデフォルトデータを作成
+  currentPageId = pageName;
+  const defaultData = getDefaultPageData(pageName);
+  saveData(defaultData);
+
+  // ページを切り替えて描画
+  renderAll();
+}
+
+function showDeletePageDialog(pageId) {
+  pageToDelete = pageId;
+  document.getElementById('delete-page-name').textContent = pageId;
+  openModal('delete-page-modal');
+}
+
+function confirmDeletePage() {
+  if (!pageToDelete) return;
+
+  const pages = getAllPages();
+  const index = pages.indexOf(pageToDelete);
+
+  if (index === -1) return;
+
+  // ページリストから削除
+  pages.splice(index, 1);
+  savePages(pages);
+
+  // LocalStorageからデータを削除
+  const key = `liteData_${pageToDelete}`;
+  localStorage.removeItem(key);
+
+  // 現在のページが削除されたページの場合、メインページに切り替え
+  if (currentPageId === pageToDelete) {
+    currentPageId = 'main';
+  }
+
+  pageToDelete = null;
+  closeModal('delete-page-modal');
+  renderAll();
 }
 
 // =====================================
