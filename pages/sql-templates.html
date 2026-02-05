@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQLテンプレート機能 - My Page</title>
+    <link rel="stylesheet" href="../css/shared-header.css">
+    <link rel="stylesheet" href="../css/sql-templates.css">
+    <link rel="stylesheet" href="../css/page-overrides.css">
+</head>
+<body>
+    <div class="page-container">
+        <header class="unified-header">
+            <button class="back-button">
+                <a href="../index.html" class="back-button-link">🏠 ホームに戻る</a>
+            </button>
+            <h1>🛡️ SQLテンプレート機能</h1>
+            <button class="help-button" onclick="openHelpModal()">?</button>
+        </header>
+
+        <main class="sql-main">
+
+            <div class="sql-container">
+                <!-- テンプレート選択エリア -->
+                <div class="template-section">
+                    <h2>テンプレート選択</h2>
+                    
+                    <!-- カテゴリ選択プルダウン -->
+                    <div class="category-selector">
+                        <label for="category-select">カテゴリ:</label>
+                        <select id="category-select" class="category-dropdown">
+                            <option value="basic">基本操作</option>
+                            <option value="join">結合</option>
+                            <option value="aggregate">集計</option>
+                            <option value="window">ウィンドウ関数</option>
+                            <option value="subquery">サブクエリ</option>
+                            <option value="cte">CTE (共通テーブル式)</option>
+                            <option value="analysis">分析</option>
+                            <option value="maintenance">メンテナンス</option>
+                        </select>
+                    </div>
+                    
+                    <div class="template-list" id="template-list">
+                        <!-- テンプレート一覧が動的に生成される -->
+                    </div>
+                </div>
+
+                <!-- 入力フォームエリア -->
+                <div class="input-section">
+                    <h2>パラメータ入力</h2>
+                    
+                    <div class="selected-template">
+                        <h3 id="selected-template-name">テンプレートを選択してください</h3>
+                        <p id="selected-template-desc">左からテンプレートを選択すると、入力フォームが表示されます</p>
+                    </div>
+                    
+                    <form id="parameter-form" class="parameter-form" style="display: none;">
+                        <!-- 動的に生成される入力フォーム -->
+                    </form>
+                    
+                    <div class="form-actions">
+                        <button id="generate-btn" class="generate-btn" disabled>SQL生成</button>
+                        <button id="clear-btn" class="clear-btn">クリア</button>
+                    </div>
+                </div>
+
+                <!-- SQL出力エリア -->
+                <div class="output-section">
+                    <h2>生成SQL</h2>
+                    <div class="sql-output">
+                        <div class="output-header">
+                            <div class="output-controls">
+                                <button id="copy-btn" class="copy-btn" disabled>📋 コピー</button>
+                                <button id="format-btn" class="format-btn" disabled>✨ 整形</button>
+                                <button id="validate-btn" class="validate-btn" disabled>✅ 検証</button>
+                            </div>
+                        </div>
+                        
+                        <div class="sql-display">
+                            <pre id="generated-sql" class="sql-code">-- 生成されたSQLがここに表示されます
+-- セキュリティのため、実際のテーブル名は保存されません</pre>
+                        </div>
+                        
+                        <div class="validation-result" id="validation-result" style="display: none;">
+                            <!-- バリデーション結果 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 説明モーダル -->
+    <div id="helpModal" class="help-modal">
+        <div class="help-modal-content">
+            <span class="help-modal-close" onclick="closeHelpModal()">&times;</span>
+            <h2>SQLテンプレート機能 使い方ガイド</h2>
+            
+            <div class="help-section">
+                <h3>🛡️ セキュリティ重視</h3>
+                <p>SQLインジェクション対策済みの安全なテンプレートを提供します。</p>
+                <ul>
+                    <li><strong>パラメータ化クエリ</strong>：プレースホルダーを使用</li>
+                    <li><strong>バリデーション</strong>：入力値の検証機能</li>
+                    <li><strong>エスケープ処理</strong>：危険な文字を無害化</li>
+                    <li><strong>権限制御</strong>：最小権限の原則に従った設計</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>📂 カテゴリ別テンプレート</h3>
+                <p>用途に応じたSQLテンプレートを選択できます。</p>
+                <ul>
+                    <li><strong>基本操作</strong>：SELECT、INSERT、UPDATE、DELETE</li>
+                    <li><strong>データ分析</strong>：集計、統計、レポート生成</li>
+                    <li><strong>管理操作</strong>：テーブル作成、インデックス管理</li>
+                    <li><strong>高度な機能</strong>：JOINs、サブクエリ、CTE</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>🔧 テンプレートの使用</h3>
+                <p>テンプレートを効率的に活用する方法。</p>
+                <ul>
+                    <li><strong>カテゴリ選択</strong>：プルダウンでカテゴリを選択</li>
+                    <li><strong>テンプレート選択</strong>：目的に合ったテンプレートを選択</li>
+                    <li><strong>パラメータ設定</strong>：必要な値を入力</li>
+                    <li><strong>プレビュー</strong>：生成されたSQLを確認</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>✏️ カスタマイズ機能</h3>
+                <p>テンプレートをカスタマイズできます。</p>
+                <ul>
+                    <li><strong>パラメータ編集</strong>：値を直接編集</li>
+                    <li><strong>条件追加</strong>：WHERE句の条件を追加</li>
+                    <li><strong>フィールド選択</strong>：必要なカラムのみ選択</li>
+                    <li><strong>並び順変更</strong>：ORDER BY句の編集</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>🔍 検証とテスト</h3>
+                <p>SQLの動作を事前に検証できます。</p>
+                <ul>
+                    <li><strong>構文チェック</strong>：SQLの文法を検証</li>
+                    <li><strong>ドライラン</strong>：実際のデータに影響せずテスト</li>
+                    <li><strong>パフォーマンス確認</strong>：実行計画の表示</li>
+                    <li><strong>結果プレビュー</strong>：想定される結果を表示</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>💡 使用上の注意</h3>
+                <p>安全にSQLテンプレートを使用するための注意点。</p>
+                <ul>
+                    <li>本番環境では必ず事前テストを実施</li>
+                    <li>大量データの操作は時間外に実行</li>
+                    <li>バックアップを取ってから実行</li>
+                    <li>権限を最小限に制限して使用</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/sql-templates.js"></script>
+    <script>
+        function openHelpModal() {
+            document.getElementById('helpModal').style.display = 'block';
+        }
+
+        function closeHelpModal() {
+            document.getElementById('helpModal').style.display = 'none';
+        }
+
+        // モーダル外をクリックしたら閉じる
+        window.onclick = function(event) {
+            const modal = document.getElementById('helpModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

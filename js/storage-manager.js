@@ -44,15 +44,15 @@ class StorageManager {
     try {
       const data = localStorage.getItem(key);
       if (data === null) return null;
-
+      
       const parsed = this.decompress(data);
-
+      
       // キャッシュサイズ制限
       if (this.cache.size >= this.maxCacheSize) {
         const firstKey = this.cache.keys().next().value;
         this.cache.delete(firstKey);
       }
-
+      
       this.cache.set(key, parsed);
       return parsed;
     } catch (error) {
@@ -65,7 +65,7 @@ class StorageManager {
   set(key, value, immediate = false) {
     // キャッシュ更新
     this.cache.set(key, value);
-
+    
     if (immediate) {
       this.saveImmediately(key, value);
     } else {
@@ -92,7 +92,7 @@ class StorageManager {
     if (this.saveTimer) {
       clearTimeout(this.saveTimer);
     }
-
+    
     this.saveTimer = setTimeout(() => {
       this.flushSaveQueue();
     }, 500); // 500ms後にバッチ保存
@@ -101,10 +101,10 @@ class StorageManager {
   // 保存キューの処理
   flushSaveQueue() {
     if (this.saveQueue.size === 0) return;
-
+    
     const batch = Array.from(this.saveQueue.entries());
     this.saveQueue.clear();
-
+    
     // バッチ処理
     requestIdleCallback(() => {
       batch.forEach(([key, value]) => {

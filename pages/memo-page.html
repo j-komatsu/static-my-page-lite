@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Memo Manager</title>
+  <link rel="stylesheet" href="../css/shared-header.css">
+  <link rel="stylesheet" href="../css/MemoManager.css">
+  <link rel="stylesheet" href="../css/page-overrides.css">
+</head>
+<body>
+  <div class="page-container">
+    <header class="unified-header">
+      <button class="back-button">
+        <a href="../index.html" class="back-button-link">🏠 ホームに戻る</a>
+      </button>
+      <h1>メモ管理</h1>
+      <button class="help-button" onclick="openHelpModal()">?</button>
+    </header>
+    </header>
+
+    <div class="memo-container">
+      <div class="memo-sidebar">
+        <!-- 検索機能 -->
+        <div class="search-section">
+          <h3>検索</h3>
+          <input type="text" id="search-input" placeholder="メモを検索..." />
+          <button id="search-btn">検索</button>
+          <button id="clear-search-btn">クリア</button>
+        </div>
+
+        <!-- カテゴリフィルタ -->
+        <div class="category-section">
+          <h3>カテゴリ</h3>
+          <select id="category-filter">
+            <option value="">すべて</option>
+            <option value="会議">会議</option>
+            <option value="アイデア">アイデア</option>
+            <option value="TODO">TODO</option>
+            <option value="学習">学習</option>
+            <option value="その他">その他</option>
+          </select>
+        </div>
+
+        <!-- テンプレート選択 -->
+        <div class="template-section">
+          <h3>テンプレート</h3>
+          <select id="template-select">
+            <option value="">テンプレートを選択...</option>
+            <option value="meeting">会議メモ</option>
+            <option value="idea">アイデアメモ</option>
+            <option value="daily">日報</option>
+            <option value="project">プロジェクトメモ</option>
+          </select>
+          <button id="apply-template-btn">適用</button>
+        </div>
+
+        <!-- メモ一覧 -->
+        <div class="memo-list-section">
+          <h3>メモ一覧</h3>
+          <ul id="memo-list">
+            <!-- メモがここに追加される -->
+          </ul>
+        </div>
+      </div>
+
+      <div class="memo-editor">
+        <div class="memo-editor-header">
+          <label for="memo-title">タイトル</label>
+          <input type="text" id="memo-title" />
+          
+          <label for="memo-category">カテゴリ</label>
+          <select id="memo-category">
+            <option value="その他">その他</option>
+            <option value="会議">会議</option>
+            <option value="アイデア">アイデア</option>
+            <option value="TODO">TODO</option>
+            <option value="学習">学習</option>
+          </select>
+
+          <label for="memo-tags">タグ (カンマ区切り)</label>
+          <input type="text" id="memo-tags" placeholder="タグ1, タグ2, タグ3" />
+        </div>
+
+        <div class="editor-controls">
+          <button id="markdown-toggle" class="editor-toggle">マークダウン表示</button>
+          <button id="preview-toggle" class="editor-toggle">プレビュー</button>
+        </div>
+
+        <label for="memo-content">内容</label>
+        <div class="content-container">
+          <textarea id="memo-content" rows="15" placeholder="マークダウン記法が使用できます"></textarea>
+          <div id="markdown-preview" class="markdown-preview" style="display: none;"></div>
+        </div>
+
+        <div class="button-group">
+          <button class="save-button" id="save-button">メモを追加</button>
+          <button class="delete-button" id="delete-button" disabled>メモを削除</button>
+          <button class="new-memo-button" id="new-memo-button">新規メモ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 説明モーダル -->
+  <div id="helpModal" class="help-modal">
+    <div class="help-modal-content">
+      <span class="help-modal-close" onclick="closeHelpModal()">&times;</span>
+      <h2>メモ管理 使い方ガイド</h2>
+      
+      <div class="help-section">
+        <h3>🔍 検索機能</h3>
+        <p>メモを効率的に検索できます。</p>
+        <ul>
+          <li>タイトルや本文でメモを検索</li>
+          <li>「検索」ボタンで実行</li>
+          <li>「クリア」ボタンで検索をリセット</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <h3>📂 カテゴリフィルタ</h3>
+        <p>カテゴリ別にメモを絞り込めます。</p>
+        <ul>
+          <li><strong>会議</strong>：会議の議事録や内容</li>
+          <li><strong>アイデア</strong>：思いついたアイデア</li>
+          <li><strong>TODO</strong>：やるべきこと</li>
+          <li><strong>学習</strong>：学習内容や覚書</li>
+          <li><strong>その他</strong>：その他のメモ</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <h3>📝 テンプレート機能</h3>
+        <p>よく使う形式のメモを素早く作成できます。</p>
+        <ul>
+          <li><strong>会議メモ</strong>：日時、参加者、議題の形式</li>
+          <li><strong>アイデアメモ</strong>：アイデア内容、関連項目の形式</li>
+          <li><strong>プロジェクトメモ</strong>：プロジェクト概要、進捗の形式</li>
+          <li><strong>学習メモ</strong>：学習内容、重要点の形式</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <h3>➕ メモの作成</h3>
+        <p>新しいメモを作成する方法。</p>
+        <ul>
+          <li>メインエリアでタイトルを入力</li>
+          <li>カテゴリを選択</li>
+          <li>本文を入力</li>
+          <li>「保存」ボタンで保存</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <h3>✏️ メモの編集・削除</h3>
+        <p>既存のメモを編集・削除できます。</p>
+        <ul>
+          <li>メモリストからメモを選択</li>
+          <li>メインエリアで内容を編集</li>
+          <li>「保存」で変更を保存</li>
+          <li>「削除」でメモを削除</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <h3>💾 データの永続化</h3>
+        <p>メモはブラウザのローカルストレージに保存されます。</p>
+        <ul>
+          <li>ブラウザを閉じても保存される</li>
+          <li>同じブラウザ・同じサイトでのみ利用可能</li>
+          <li>定期的なバックアップを推奨</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/MemoManager.js"></script> <!-- 外部ファイルとして読み込み -->
+  <script>
+    function openHelpModal() {
+      document.getElementById('helpModal').style.display = 'block';
+    }
+
+    function closeHelpModal() {
+      document.getElementById('helpModal').style.display = 'none';
+    }
+
+    // モーダル外をクリックしたら閉じる
+    window.onclick = function(event) {
+      const modal = document.getElementById('helpModal');
+      if (event.target == modal) {
+        modal.style.display = 'none';
+      }
+    }
+  </script>
+</body>
+</html>

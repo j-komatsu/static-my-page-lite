@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Manager</title>
+  <link rel="stylesheet" href="../css/shared-header.css">
+  <link rel="stylesheet" href="../css/TaskManager.css">
+  <link rel="stylesheet" href="../css/page-overrides.css">
+</head>
+<body>
+  <div class="page-container">
+    <header class="unified-header">
+      <button class="back-button">
+        <a href="../index.html" class="back-button-link">🏠 ホームに戻る</a>
+      </button>
+      <h1>タスク管理</h1>
+      <button class="help-button" onclick="openHelpModal()">?</button>
+    </header>
+      
+      <!-- ポモドーロタイマー -->
+      <div class="pomodoro-timer">
+        <div class="timer-display">
+          <span id="timer-time">25:00</span>
+        </div>
+        <div class="timer-controls">
+          <button id="timer-start" class="timer-btn">開始</button>
+          <button id="timer-pause" class="timer-btn">一時停止</button>
+          <button id="timer-reset" class="timer-btn">リセット</button>
+        </div>
+        <div class="timer-mode">
+          <span id="timer-mode-text">作業時間</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="task-container">
+      <!-- 計画セクション -->
+      <div class="task-section" id="plan-section">
+        <h2>計画</h2>
+        <div class="task-list" id="plan-tasks" data-status="plan">
+          <!-- タスクがここに追加される -->
+        </div>
+        <div class="add-task-area">
+          <input type="text" id="new-task-input" placeholder="新しいタスクを入力..." />
+          <select id="task-priority" class="task-priority-select">
+            <option value="low">低</option>
+            <option value="medium" selected>中</option>
+            <option value="high">高</option>
+          </select>
+          <input type="date" id="task-due-date" class="task-due-date" />
+          <button id="add-task-btn">追加</button>
+        </div>
+      </div>
+
+      <!-- 実行セクション -->
+      <div class="task-section" id="progress-section">
+        <h2>実行</h2>
+        <div class="task-list" id="progress-tasks" data-status="progress">
+          <!-- タスクがここに追加される -->
+        </div>
+      </div>
+
+      <!-- 完了セクション -->
+      <div class="task-section" id="completed-section">
+        <h2>完了</h2>
+        <div class="task-list" id="completed-tasks" data-status="completed">
+          <!-- タスクがここに追加される -->
+        </div>
+      </div>
+    </div>
+
+    <!-- タスク編集モーダル -->
+    <div id="task-edit-modal" class="modal">
+      <div class="modal-content">
+        <h3>タスク編集</h3>
+        <label for="edit-task-title">タスク名</label>
+        <input type="text" id="edit-task-title" />
+        <label for="edit-task-description">説明</label>
+        <textarea id="edit-task-description" rows="4"></textarea>
+        
+        <label for="edit-task-priority">優先度</label>
+        <select id="edit-task-priority" class="task-priority-select">
+          <option value="low">低</option>
+          <option value="medium">中</option>
+          <option value="high">高</option>
+        </select>
+        
+        <label for="edit-task-due-date">期限</label>
+        <input type="date" id="edit-task-due-date" class="task-due-date" />
+        
+        <label for="edit-task-status">ステータス</label>
+        <select id="edit-task-status" class="task-status-select">
+          <option value="plan">計画</option>
+          <option value="progress">実行</option>
+          <option value="completed">完了</option>
+        </select>
+        
+        <label for="edit-task-progress">進捗率 (%)</label>
+        <input type="range" id="edit-task-progress" min="0" max="100" value="0" class="progress-slider" />
+        <span id="progress-value">0%</span>
+        
+        <div class="modal-buttons">
+          <button id="save-task-btn">保存</button>
+          <button id="delete-task-btn">削除</button>
+          <button id="cancel-edit-btn">キャンセル</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 説明モーダル -->
+  <div id="helpModal" class="help-modal">
+    <div class="help-modal-content">
+      <span class="help-modal-close" onclick="closeHelpModal()">&times;</span>
+      <h2>タスク管理 使い方ガイド</h2>
+      
+      <div class="help-section">
+        <h3>⏰ ポモドーロタイマー</h3>
+        <p>集中力を高めるポモドーロ・テクニックを実践できます。</p>
+        <ul>
+          <li><strong>開始</strong>：25分の作業時間をスタート</li>
+          <li><strong>一時停止</strong>：作業を中断</li>
+          <li><strong>リセット</strong>：タイマーを初期状態に戻す</li>
+          <li>作業時間後は5分の休憩時間に自動切り替え</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <h3>📝 タスク管理</h3>
+        <p>3つのステータスでタスクを管理できます。</p>
+        <ul>
+          <li><strong>計画</strong>：新しいタスクを追加・計画</li>
+          <li><strong>進行中</strong>：現在作業中のタスク</li>
+          <li><strong>完了</strong>：完了したタスク</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <h3>➕ タスクの追加</h3>
+        <p>計画セクションでタスクを追加できます。</p>
+        <ul>
+          <li>タスク名を入力</li>
+          <li>優先度を選択（低・中・高）</li>
+          <li>期限を設定（オプション）</li>
+          <li>「追加」ボタンでタスクを作成</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <h3>✏️ タスクの編集</h3>
+        <p>タスクをクリックして詳細を編集できます。</p>
+        <ul>
+          <li>タスク名と説明を変更</li>
+          <li>優先度と期限を更新</li>
+          <li>進捗率をスライダーで調整</li>
+          <li>「保存」で変更を確定</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <h3>🚀 ステータス変更</h3>
+        <p>タスクを別のステータスに移動できます。</p>
+        <ul>
+          <li>ドラッグ&ドロップで移動</li>
+          <li>または編集画面でステータスを変更</li>
+          <li>完了時は自動的に完了日時が記録</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <h3>🎯 優先度システム</h3>
+        <p>タスクは優先度で色分けされます。</p>
+        <ul>
+          <li><strong>高</strong>：赤色 - 緊急度の高いタスク</li>
+          <li><strong>中</strong>：黄色 - 通常のタスク</li>
+          <li><strong>低</strong>：緑色 - 優先度の低いタスク</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/storage-manager.js"></script>
+  <script src="../js/TaskManager.js"></script>
+  <script>
+    function openHelpModal() {
+      document.getElementById('helpModal').style.display = 'block';
+    }
+
+    function closeHelpModal() {
+      document.getElementById('helpModal').style.display = 'none';
+    }
+
+    // モーダル外をクリックしたら閉じる
+    window.onclick = function(event) {
+      const modal = document.getElementById('helpModal');
+      if (event.target == modal) {
+        modal.style.display = 'none';
+      }
+    }
+  </script>
+</body>
+</html>

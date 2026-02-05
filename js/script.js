@@ -1,426 +1,1847 @@
-// =====================================
-// Static My Page Lite - Bookmarks Only
-// =====================================
+let currentSectionId = "";
+let currentEditingIndex = -1;
 
-// グローバル変数
-let currentEditingSectionId = null;
-let draggedLinkIndex = null;
-let currentPageId = 'main';
-let pageToDelete = null;
-
-// =====================================
-// 初期化
-// =====================================
-
-document.addEventListener('DOMContentLoaded', function() {
-  initializeApp();
-});
-
-function initializeApp() {
-  loadData();
-  renderAll();
-  setupEventListeners();
-}
-
-function setupEventListeners() {
-  // モーダル外クリックで閉じる
-  window.onclick = function(event) {
-    if (event.target.classList.contains('modal')) {
-      event.target.style.display = 'none';
-    }
-  };
-
-  // Escキーでモーダルを閉じる
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-      closeAllModals();
-    }
-  });
-}
-
-function closeAllModals() {
-  const modals = document.querySelectorAll('.modal');
-  modals.forEach(modal => {
-    modal.style.display = 'none';
-  });
-}
-
-// =====================================
-// データ管理
-// =====================================
-
-function getDefaultData() {
-  return {
-    title: 'My Bookmarks',
-    sections: {
-      'section1': { name: 'セクション1', links: [] },
-      'section2': { name: 'セクション2', links: [] },
-      'section3': { name: 'セクション3', links: [] },
-      'section4': { name: 'セクション4', links: [] },
-      'section5': { name: 'セクション5', links: [] },
-      'section6': { name: 'セクション6', links: [] }
-    },
-    headerLinks: []
-  };
-}
-
-function getDefaultPageData(pageName) {
-  return {
-    title: pageName,
-    sections: {
-      'section1': { name: 'セクション1', links: [] },
-      'section2': { name: 'セクション2', links: [] },
-      'section3': { name: 'セクション3', links: [] },
-      'section4': { name: 'セクション4', links: [] },
-      'section5': { name: 'セクション5', links: [] },
-      'section6': { name: 'セクション6', links: [] }
-    }
-  };
-}
-
-function loadData() {
-  const key = currentPageId === 'main' ? 'liteData' : `liteData_${currentPageId}`;
-  const data = storageManager.get(key);
-  if (!data) {
-    const defaultData = currentPageId === 'main' ? getDefaultData() : getDefaultPageData(currentPageId);
-    saveData(defaultData);
-    return defaultData;
+// モバイルメニューの表示切替機能
+function toggleMobileMenu() {
+  const fixedGroup = document.querySelector('.fixed-buttons-group');
+  const dynamicGroup = document.querySelector('.dynamic-buttons-group');
+  
+  if (fixedGroup && dynamicGroup) {
+    fixedGroup.classList.toggle('show');
+    dynamicGroup.classList.toggle('show');
   }
-  return data;
 }
 
-function saveData(data) {
-  const key = currentPageId === 'main' ? 'liteData' : `liteData_${currentPageId}`;
-  storageManager.set(key, data, true);
+// ヘッダーリンクのデータ管理
+const headerLinksKey = 'liteHeaderLinks_global';
+let headerLinksData = JSON.parse(localStorage.getItem(headerLinksKey)) || [
+  { text: 'Google', url: 'https://www.google.co.jp/' },
+  { text: 'Claude', url: 'https://claude.ai/' }
+];
+
+// 初期データが空の場合は強制的にデフォルト値を設定
+if (!headerLinksData || headerLinksData.length === 0) {
+  headerLinksData = [
+    { text: 'Google', url: 'https://www.google.co.jp/' },
+    { text: 'Claude', url: 'https://claude.ai/' }
+  ];
+  localStorage.setItem(headerLinksKey, JSON.stringify(headerLinksData));
 }
 
-function getData() {
-  return loadData();
-}
 
-function getAllPages() {
-  const pages = storageManager.get('litePages');
-  if (!pages) {
-    const defaultPages = ['main'];
-    storageManager.set('litePages', defaultPages, true);
-    return defaultPages;
-  }
-  return pages;
-}
 
-function savePages(pages) {
-  storageManager.set('litePages', pages, true);
-}
-
-// =====================================
-// 全体の描画
-// =====================================
-
-function renderAll() {
-  const data = getData();
-
-  // タイトル
-  document.getElementById('main-title').textContent = data.title || 'My Bookmarks';
-
-  // 各セクション
-  const sectionIds = ['section1', 'section2', 'section3', 'section4', 'section5', 'section6'];
-  sectionIds.forEach(sectionId => {
-    renderSection(sectionId);
-  });
-
-  // ヘッダーリンク（メインページのみ）
-  if (currentPageId === 'main') {
-    renderHeaderLinks();
-  } else {
-    document.getElementById('header-links-container').innerHTML = '';
-  }
-
-  // ページタブ
-  renderPageTabs();
-}
-
-function renderSection(sectionId) {
-  const data = getData();
-  const section = data.sections[sectionId];
-
-  if (!section) return;
-
-  // セクション名
-  const titleElement = document.querySelector(`#${sectionId} .section-title-text`);
-  if (titleElement) {
-    titleElement.textContent = section.name;
-  }
-
-  // リンク一覧
-  const linkGrid = document.querySelector(`#${sectionId} .link-grid`);
-  if (!linkGrid) return;
-
-  linkGrid.innerHTML = '';
-
-  if (!section.links || section.links.length === 0) {
-    linkGrid.innerHTML = '<p class="empty-message">リンクがありません</p>';
+function removeLink(index) {
+  if (!linksData[currentSectionId]) {
+    console.error(`セクション${currentSectionId}のリンクデータが存在しません`);
     return;
   }
 
-  section.links.forEach((link, index) => {
-    const linkElement = createLinkElement(link, sectionId, index);
-    linkGrid.appendChild(linkElement);
+  // 指定インデックスのリンクを削除
+  linksData[currentSectionId].splice(index, 1);
+
+  // ローカルストレージに保存
+  saveLinks();
+
+  // モーダル内とセクション表示を更新
+  renderLinks();
+  editLinks(currentSectionId); // モーダルも再描画
+}
+
+
+
+
+// ローカルストレージ設定 ------------------------------------------------------------
+
+// ページごとのキーを生成（Lite版用にプレフィックスを変更）
+const pageKey = `liteData_${document.title.replace(/\s+/g, "_")}`;
+const sectionNamesKey = `liteNames_${document.title.replace(/\s+/g, "_")}`;
+const sectionSubtitlesKey = `liteSubtitles_${document.title.replace(/\s+/g, "_")}`;
+const mainTitleKey = `liteTitle_${window.location.pathname.replace(/[^a-zA-Z0-9]/g, "_")}`;
+let linksData = {};
+
+
+// レンダリング状態を管理
+let renderingInProgress = false;
+
+// 各セクションのリンクを描画
+function renderLinks() {
+  // 重複レンダリングを防止
+  if (renderingInProgress) return;
+  renderingInProgress = true;
+  
+  // 次のイベントループで実行してパフォーマンスを向上
+  requestAnimationFrame(() => {
+    try {
+      renderLinksInternal();
+    } finally {
+      renderingInProgress = false;
+    }
   });
 }
 
-function createLinkElement(link, sectionId, index) {
-  const div = document.createElement('div');
-  div.className = 'link-item' + (link.inline ? ' inline' : '');
+function renderLinksInternal() {
+  console.log('Current linksData:', linksData);
+  for (const [sectionId, links] of Object.entries(linksData)) {
+    const linkGrid = document.querySelector(`#${sectionId} .link-grid`);
+    const linkList = document.querySelector(`#${sectionId} .link-list`);
 
-  const a = document.createElement('a');
-  a.href = link.url;
-  a.textContent = link.text;
-  a.target = '_blank';
-  a.rel = 'noopener noreferrer';
-
-  div.appendChild(a);
-  return div;
+    // 新しいカードスタイルのセクションの場合
+    if (linkGrid) {
+      linkGrid.innerHTML = ""; // 既存のリンクを削除
+      
+      links.forEach((link, index) => {
+        // 既存のリンクデータの安全な取得
+        const text = link.text || '';
+        const url = link.url || '';
+        const inline = link.inline || false;
+        
+        const linkCard = document.createElement("div");
+        linkCard.className = `link-card${inline ? ' inline' : ''}`;
+        
+        // リンク要素を作成
+        const linkElement = document.createElement("a");
+        
+        // ローカルファイルパスの場合はfile://プロトコルを付与
+        let processedUrl = url;
+        if (url.match(/^[A-Za-z]:\\/) || url.match(/^\\\\/) || url.match(/^\/[^\/]/)) {
+          // Windows パス (C:\...) または UNC パス (\\...) または Unix パス (/...)
+          processedUrl = `file:///${url.replace(/\\/g, '/')}`;
+        }
+        
+        linkElement.href = processedUrl;
+        linkElement.target = "_blank";
+        linkElement.className = "link-card-content";
+        // data-url 属性を設定（ファビコン読み込み用）
+        linkCard.dataset.url = processedUrl;
+        
+        linkElement.innerHTML = `
+          <div class="link-info">
+            <div class="link-title">${text}</div>
+          </div>
+        `;
+        
+        // カードにリンクを追加
+        linkCard.appendChild(linkElement);
+        
+        linkGrid.appendChild(linkCard);
+        
+        // ファビコンを読み込み（将来の機能として一時的に無効化）
+        // setTimeout(() => {
+        //   loadFavicon(linkCard);
+        // }, 10);
+      });
+    }
+    // 従来のリストスタイルのセクションの場合
+    else if (linkList) {
+      linkList.innerHTML = ""; // 既存のリンクを削除
+      links.forEach(({ text, url }) => {
+        // ローカルファイルパスの場合はfile://プロトコルを付与
+        let processedUrl = url;
+        if (url.match(/^[A-Za-z]:\\/) || url.match(/^\\\\/) || url.match(/^\/[^\/]/)) {
+          // Windows パス (C:\...) または UNC パス (\\...) または Unix パス (/...)
+          processedUrl = `file:///${url.replace(/\\/g, '/')}`;
+        }
+        
+        const listItem = document.createElement("li");
+        listItem.innerHTML = `<a href="${processedUrl}" target="_blank">${text}</a>`;
+        linkList.appendChild(listItem);
+      });
+    }
+  }
 }
 
-// =====================================
-// タイトル編集
-// =====================================
-
-function editMainTitle() {
-  const titleElement = document.getElementById('main-title');
-  const inputElement = document.getElementById('main-title-input');
-
-  inputElement.value = titleElement.textContent;
-  titleElement.style.display = 'none';
-  inputElement.style.display = 'inline-block';
-  inputElement.focus();
-  inputElement.select();
+// デバウンス処理ユーティリティ
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
 }
 
-function saveMainTitle() {
-  const titleElement = document.getElementById('main-title');
-  const inputElement = document.getElementById('main-title-input');
+// サブタイトル編集機能
+function editSectionSubtitle(sectionId) {
+  const subtitleElement = document.querySelector(`#${sectionId} .section-subtitle`);
+  const inputElement = document.getElementById(`${sectionId}-subtitle-input`);
+  
+  if (subtitleElement && inputElement) {
+    // 現在のテキストを入力フィールドに設定
+    inputElement.value = subtitleElement.textContent;
+    
+    // 表示を切り替え
+    subtitleElement.style.display = 'none';
+    inputElement.style.display = 'block';
+    inputElement.focus();
+    inputElement.select();
+  }
+}
 
-  const newTitle = inputElement.value.trim();
-  if (newTitle) {
-    const data = getData();
-    data.title = newTitle;
-    saveData(data);
-    titleElement.textContent = newTitle;
+function saveSectionSubtitle(sectionId) {
+  const subtitleElement = document.querySelector(`#${sectionId} .section-subtitle`);
+  const inputElement = document.getElementById(`${sectionId}-subtitle-input`);
+  
+  if (subtitleElement && inputElement) {
+    const newSubtitle = inputElement.value.trim();
+    
+    if (newSubtitle !== '') {
+      // 新しいサブタイトルを保存
+      subtitleElement.textContent = newSubtitle;
+      
+      // ローカルストレージに保存
+      const storedSubtitles = JSON.parse(localStorage.getItem(sectionSubtitlesKey) || '{}');
+      storedSubtitles[sectionId] = newSubtitle;
+      localStorage.setItem(sectionSubtitlesKey, JSON.stringify(storedSubtitles));
+    }
+    
+    // 表示を元に戻す
+    inputElement.style.display = 'none';
+    subtitleElement.style.display = 'block';
+  }
+}
+
+// 個別のリンクを編集
+function editLinkItem(sectionId, index) {
+  console.log('editLinkItem called:', sectionId, index);
+  currentSectionId = sectionId;
+  currentEditingIndex = index;
+  
+  const links = linksData[sectionId] || [];
+  const link = links[index];
+  
+  console.log('Link data:', link);
+  
+  if (link) {
+    // 編集中のリンクカードをハイライト
+    highlightEditingLink(sectionId, index);
+    
+    // 単一編集モードでモーダルを開く
+    openSingleEditMode(link, sectionId);
+  } else {
+    console.error('Link not found:', sectionId, index);
+  }
+}
+
+// 単一編集モードでモーダルを開く
+function openSingleEditMode(link, sectionId) {
+  // モーダルタイトルを変更
+  document.getElementById('modal-title').textContent = 'リンクの編集';
+  
+  // 単一編集モードを表示、一覧モードを非表示
+  document.getElementById('single-edit-mode').style.display = 'block';
+  document.getElementById('list-edit-mode').style.display = 'none';
+  
+  // セクション名を取得
+  const sectionName = document.querySelector(`#${sectionId} .section-title-text`)?.textContent || sectionId;
+  
+  // 現在のリンク情報を表示
+  const currentDetails = document.getElementById('current-link-details');
+  if (currentDetails) {
+    currentDetails.innerHTML = `
+      <div><strong>セクション:</strong> ${sectionName}</div>
+      <div><strong>現在のテキスト:</strong> ${link.text || 'テキストなし'}</div>
+      <div><strong>現在のURL:</strong> ${link.url || 'URLなし'}</div>
+      <div><strong>表示形式:</strong> ${link.inline ? '1行表示' : '通常表示'}</div>
+    `;
+  }
+  
+  // フォームに現在の値を設定
+  document.getElementById('edit-link-text').value = link.text || '';
+  document.getElementById('edit-link-url').value = link.url || '';
+  document.getElementById('edit-link-inline').checked = link.inline || false;
+  
+  // モーダルを表示
+  document.getElementById('modal').style.display = 'flex';
+}
+
+// 編集した内容を保存
+function saveEditedLink() {
+  const text = document.getElementById('edit-link-text').value.trim();
+  const url = document.getElementById('edit-link-url').value.trim();
+  const inline = document.getElementById('edit-link-inline').checked;
+  
+  if (!text || !url) {
+    alert('リンクテキストとURLを入力してください。');
+    return;
+  }
+  
+  if (!linksData[currentSectionId]) {
+    linksData[currentSectionId] = [];
+  }
+  
+  // リンクデータを更新
+  linksData[currentSectionId][currentEditingIndex] = { text, url, inline };
+  
+  // データを保存して表示を更新
+  saveLinks();
+  renderLinks();
+  
+  // 更新されたリンクのファビコンを読み込み
+  setTimeout(() => {
+    const updatedLinkCards = document.querySelectorAll('.link-card[data-url]:not([data-favicon-loaded])');
+    updatedLinkCards.forEach(card => {
+      loadFavicon(card);
+    });
+  }, 50);
+  
+  // モーダルを閉じる
+  closeModal();
+}
+
+// 単一編集をキャンセル
+function cancelSingleEdit() {
+  closeModal();
+}
+
+// 編集中のリンクをハイライト
+function highlightEditingLink(sectionId, index) {
+  // 全てのediting状態をクリア
+  document.querySelectorAll('.link-card.editing').forEach(card => {
+    card.classList.remove('editing');
+  });
+  
+  // 編集対象をハイライト
+  const linkGrid = document.querySelector(`#${sectionId} .link-grid`);
+  if (linkGrid) {
+    const linkCards = linkGrid.querySelectorAll('.link-card');
+    if (linkCards[index]) {
+      linkCards[index].classList.add('editing');
+      
+      // スクロールして見えるようにする
+      linkCards[index].scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+      });
+    }
+  }
+}
+
+
+// 個別のリンクを削除
+function removeLinkItem(sectionId, index) {
+  if (!linksData[sectionId]) return;
+  
+  if (confirm('このリンクを削除しますか？')) {
+    linksData[sectionId].splice(index, 1);
+    saveLinks();
+    renderLinks();
+    
+    // 削除後に残ったリンクのファビコンを読み込み
+    setTimeout(() => {
+      const remainingLinkCards = document.querySelectorAll('.link-card[data-url]:not([data-favicon-loaded])');
+      remainingLinkCards.forEach(card => {
+        loadFavicon(card);
+      });
+    }, 50);
+  }
+}
+
+
+// 編集モードをキャンセル（一覧モード用）
+function cancelEdit() {
+  // フォームをクリア
+  document.getElementById('new-link-text').value = '';
+  document.getElementById('new-link-url').value = '';
+  document.getElementById('new-link-inline').checked = false;
+}
+
+// リンクを編集するためのモーダルを表示（一覧モード）
+function editLinks(sectionId) {
+  currentSectionId = sectionId;
+  currentEditingIndex = -1; // 一覧モードでは編集インデックスをリセット
+  
+  // モーダルタイトルを変更
+  document.getElementById('modal-title').textContent = 'リンクの管理';
+  
+  // 一覧編集モードを表示、他のモードを非表示
+  document.getElementById('single-edit-mode').style.display = 'none';
+  document.getElementById('list-edit-mode').style.display = 'block';
+  document.getElementById('header-links-edit-mode').style.display = 'none';
+  
+  const modalLinkList = document.getElementById("modal-link-list");
+  modalLinkList.innerHTML = ""; // モーダル内のリンクリストをクリア
+
+  // 入力フィールドをリセット
+  document.getElementById("new-link-text").value = ""; // リンクテキストをクリア
+  document.getElementById("new-link-url").value = ""; // リンクURLをクリア
+  document.getElementById("new-link-inline").checked = false;
+
+  // 現在のリンクを表示
+  (linksData[sectionId] || []).forEach((link, index) => {
+    const listItem = document.createElement("li");
+    listItem.draggable = true;
+    listItem.dataset.index = index;
+    
+    listItem.innerHTML = `
+      <div class="drag-handle">⋮⋮</div>
+      <div class="link-content">
+        <span class="link-text">${link.text}</span>
+        <a href="${link.url}" target="_blank" class="link-url">${link.url}</a>
+        ${link.inline ? '<span class="inline-badge">1行表示</span>' : ''}
+      </div>
+      <div class="link-item-actions">
+        <button onclick="editLinkFromModal('${sectionId}', ${index})">編集</button>
+        <button onclick="removeLink(${index})">削除</button>
+      </div>
+    `;
+    
+    // リンク項目のドラッグ機能を追加
+    listItem.addEventListener('dragstart', handleLinkDragStart);
+    listItem.addEventListener('dragover', handleLinkDragOver);
+    listItem.addEventListener('drop', handleLinkDrop);
+    listItem.addEventListener('dragend', handleLinkDragEnd);
+    listItem.addEventListener('dragenter', handleLinkDragEnter);
+    listItem.addEventListener('dragleave', handleLinkDragLeave);
+    
+    modalLinkList.appendChild(listItem);
+  });
+
+  document.getElementById("modal").style.display = "flex";
+}
+
+// モーダルからリンクを編集
+function editLinkFromModal(sectionId, index) {
+  editLinkItem(sectionId, index);
+}
+
+
+// モーダルを閉じる
+function closeModal() {
+  document.getElementById("modal").style.display = "none";
+  
+  // 全ての編集状態をリセット
+  currentEditingIndex = -1;
+  
+  // ハイライトを削除
+  document.querySelectorAll('.link-card.editing').forEach(card => {
+    card.classList.remove('editing');
+  });
+  
+  // モーダルの表示状態をリセット
+  document.getElementById('single-edit-mode').style.display = 'none';
+  document.getElementById('list-edit-mode').style.display = 'block';
+}
+
+// リンクを追加
+function addLink() {
+  const text = document.getElementById("new-link-text").value.trim();
+  const url = document.getElementById("new-link-url").value.trim();
+  const inline = document.getElementById("new-link-inline").checked;
+
+  if (!text || !url) {
+    alert("リンクテキストとURLを入力してください！");
+    return;
   }
 
-  inputElement.style.display = 'none';
-  titleElement.style.display = 'inline-block';
+  // 現在のセクションにリンクを追加
+  if (!linksData[currentSectionId]) {
+    linksData[currentSectionId] = [];
+  }
+  linksData[currentSectionId].push({ text, url, inline });
+
+  // ローカルストレージに保存
+  saveLinks();
+  renderLinks(); // セクションを再描画
+  editLinks(currentSectionId); // モーダル内のリストも更新
+  
+  // 新しく追加されたリンクのファビコンを読み込み
+  setTimeout(() => {
+    const newLinkCards = document.querySelectorAll('.link-card[data-url]:not([data-favicon-loaded])');
+    newLinkCards.forEach(card => {
+      loadFavicon(card);
+    });
+  }, 50);
+  
+  // フォームをクリア
+  document.getElementById("new-link-text").value = '';
+  document.getElementById("new-link-url").value = '';
+  document.getElementById("new-link-inline").checked = false;
 }
 
+
+// デバウンスされた保存関数
+const debouncedSaveLinks = debounce(() => {
+  saveLinksImmediate();
+}, 300);
+
+// ローカルストレージにリンクデータを保存
+function saveLinks() {
+  // デバウンス処理を使用して連続した保存操作を制限
+  debouncedSaveLinks();
+}
+
+// 即座に保存する関数
+function saveLinksImmediate() {
+  try {
+    if (window.storageManager) {
+      window.storageManager.set(pageKey, {
+        links: linksData,
+        lastModified: Date.now()
+      });
+    } else {
+      localStorage.setItem(pageKey, JSON.stringify(linksData));
+    }
+  } catch (error) {
+    console.error('リンクデータの保存に失敗しました:', error);
+    alert('データの保存に失敗しました。ストレージの容量が不足している可能性があります。');
+  }
+}
+
+// 遅延ファビコン読み込み用の変数
+let faviconObserver = null;
+let loadedFavicons = new Set();
+
+// Intersection Observer を使用したファビコン遅延読み込み
+function initLazyFaviconLoading() {
+  if (!('IntersectionObserver' in window)) {
+    // フォールバック: Intersection Observer がサポートされていない場合は即座に読み込み
+    loadAllFavicons();
+    return;
+  }
+
+  faviconObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && !entry.target.dataset.faviconLoaded) {
+        loadFavicon(entry.target);
+        faviconObserver.unobserve(entry.target);
+      }
+    });
+  }, {
+    rootMargin: '50px', // 50px 手前で読み込み開始
+    threshold: 0.1
+  });
+
+  // 初期表示されているリンクカードを監視対象に追加
+  observeVisibleLinkCards();
+}
+
+// 表示されているリンクカードを監視
+function observeVisibleLinkCards() {
+  const linkCards = document.querySelectorAll('.link-card[data-url]:not([data-favicon-loaded])');
+  linkCards.forEach(card => {
+    if (faviconObserver) {
+      faviconObserver.observe(card);
+    }
+  });
+}
+
+// 単一のファビコンを読み込み
+function loadFavicon(linkCard) {
+  const url = linkCard.dataset.url;
+  console.log('Loading favicon for URL:', url);
+  
+  if (!url || loadedFavicons.has(url)) {
+    console.log('Skipping favicon load:', !url ? 'no URL' : 'already loaded');
+    return;
+  }
+
+  const faviconImg = linkCard.querySelector('.favicon');
+  if (!faviconImg) {
+    console.log('No favicon img element found');
+    return;
+  }
+
+  try {
+    const urlObj = new URL(url);
+    const faviconUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(urlObj.hostname)}&sz=16`;
+    console.log('Favicon URL:', faviconUrl);
+    
+    // プリロード用の image オブジェクトを作成
+    const tempImg = new Image();
+    tempImg.onload = () => {
+      console.log('Favicon loaded successfully for:', urlObj.hostname);
+      faviconImg.src = faviconUrl;
+      linkCard.dataset.faviconLoaded = 'true';
+      loadedFavicons.add(url);
+    };
+    tempImg.onerror = () => {
+      console.log('Favicon failed to load for:', urlObj.hostname);
+      // エラー時はデフォルトアイコンを設定
+      faviconImg.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23ddd"/><text x="8" y="12" text-anchor="middle" fill="%23666" font-size="10">🔗</text></svg>';
+      linkCard.dataset.faviconLoaded = 'true';
+    };
+    tempImg.src = faviconUrl;
+  } catch (error) {
+    console.warn('Invalid URL for favicon:', url, error);
+    // 無効なURLの場合はデフォルトアイコンを設定
+    faviconImg.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23ddd"/><text x="8" y="12" text-anchor="middle" fill="%23666" font-size="10">🔗</text></svg>';
+    linkCard.dataset.faviconLoaded = 'true';
+  }
+}
+
+// 全てのファビコンを即座に読み込み（フォールバック用）
+function loadAllFavicons() {
+  const linkCards = document.querySelectorAll('.link-card[data-url]:not([data-favicon-loaded])');
+  linkCards.forEach(loadFavicon);
+}
+
+// ページロード時にリンクデータを読み込む
+window.onload = function () {
+  try {
+    // プロジェクトデータの読み込み
+    loadProjects();
+    
+    // プロジェクトナビゲーションの更新
+    updateProjectNavigation();
+    
+    // メインタイトルの読み込み
+    const storedMainTitle = localStorage.getItem(mainTitleKey);
+    if (storedMainTitle) {
+      document.getElementById("main-title").textContent = storedMainTitle;
+      document.title = storedMainTitle;
+    }
+    
+    // ヘッダーリンクの初期化と表示
+    if (!headerLinksData || headerLinksData.length === 0) {
+      headerLinksData = [
+        { text: 'Google', url: 'https://www.google.co.jp/' },
+        { text: 'Claude', url: 'https://claude.ai/' }
+      ];
+      localStorage.setItem(headerLinksKey, JSON.stringify(headerLinksData));
+    }
+    renderHeaderLinks();
+
+    // セクション名の読み込み
+    const storedSectionNames = JSON.parse(localStorage.getItem(sectionNamesKey) || "{}");
+    for (const [sectionId, name] of Object.entries(storedSectionNames)) {
+      const title = document.querySelector(`#${sectionId} h2`);
+      if (title) {
+        title.textContent = name;
+      }
+    }
+
+    // リンクデータの読み込み
+    if (window.storageManager) {
+      const data = window.storageManager.get(pageKey);
+      if (data) {
+        linksData = data.links || data; // 新形式と旧形式の両方に対応
+      }
+    } else {
+      const storedLinks = localStorage.getItem(pageKey);
+      if (storedLinks) {
+        linksData = JSON.parse(storedLinks);
+      }
+    }
+
+    // リンクのレンダリング
+    renderLinks();
+    
+    // ファビコン読み込みを初期化
+    setTimeout(() => {
+      // 既存のリンクカードのファビコンを読み込み
+      const linkCards = document.querySelectorAll('.link-card[data-url]:not([data-favicon-loaded])');
+      linkCards.forEach(card => {
+        loadFavicon(card);
+      });
+      
+      // 遅延読み込み機能も初期化
+      initLazyFaviconLoading();
+    }, 200);
+    
+    // URLハッシュに基づいてビューを切り替え
+    const hash = window.location.hash.substring(1);
+    if (hash && hash !== 'main') {
+      // プロジェクトが存在する場合のみ切り替え
+      const projectExists = projects.some(p => p.id === hash);
+      if (projectExists) {
+        switchView(hash);
+      } else {
+        switchView('main');
+      }
+    } else {
+      switchView('main');
+    }
+    
+    // MyPageタブのクリックイベントを設定
+    const mainTab = document.querySelector('a[data-view="main"]');
+    if (mainTab) {
+      mainTab.addEventListener('click', (e) => {
+        e.preventDefault();
+        switchView('main');
+      });
+    }
+    
+    // 初期状態でプロジェクトが空かつMyPageが開始されていない場合のメッセージ表示
+    const myPageStarted = localStorage.getItem(myPageStartedKey) === 'true';
+    console.log('MyPage started:', myPageStarted, 'Projects count:', projects.length);
+    
+    if (projects.length === 0 && !myPageStarted) {
+      console.log('Showing welcome message');
+      setTimeout(() => {
+        showWelcomeMessage();
+      }, 300);
+    }
+    
+    // DOM完全構築後にドラッグ&ドロップ機能を初期化
+    setTimeout(() => {
+      console.log('Initializing drag and drop...');
+      initializeDragAndDrop();
+      restoreSectionOrder();
+    }, 500);
+    
+  } catch (error) {
+    console.error('Error during initialization:', error);
+  }
+};
+
+// ページロード時にナビゲーションリンクのテキストを更新
+function updateNavigationLinksOnLoad() {
+  const navLinksKey = `liteNavTitles_global`;
+  const storedNavTitles = JSON.parse(localStorage.getItem(navLinksKey) || "{}");
+  
+  // 各ページのタイトルを取得してナビゲーションリンクを更新
+  const linkMappings = [
+    { pageId: "project-a", linkSelector: 'a[href="project-a.html"]' },
+    { pageId: "project-b", linkSelector: 'a[href="project-b.html"]' },
+    { pageId: "project-c", linkSelector: 'a[href="project-c.html"]' },
+    { pageId: "project-d", linkSelector: 'a[href="project-d.html"]' }
+  ];
+  
+  linkMappings.forEach(mapping => {
+    const link = document.querySelector(mapping.linkSelector);
+    if (link && storedNavTitles[mapping.pageId]) {
+      link.textContent = storedNavTitles[mapping.pageId];
+    }
+  });
+}
+
+
+// ローカルストレージ設定 ------------------------------------------------------------
+
+// ローカルストレージにデータを保存操作 -----------------------------------------------
+// エクスポート機能: ローカルストレージのデータをJSONとしてダウンロード
+function exportData() {
+  const data = { ...localStorage }; // ローカルストレージのすべてのデータを取得
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }); // JSON形式でBlob作成
+  const url = URL.createObjectURL(blob);
+
+  // ダウンロード用リンクを生成してクリック
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "mypage_data.json";
+  a.click();
+
+  URL.revokeObjectURL(url); // URLを解放
+}
+
+// インポート機能: JSONファイルをローカルストレージに適用
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) {
+    alert("ファイルを選択してください！");
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function () {
+    try {
+      const importedData = JSON.parse(reader.result);
+      if (typeof importedData !== "object") {
+        throw new Error("データ形式が正しくありません！");
+      }
+
+      // ローカルストレージにデータを保存
+      Object.keys(importedData).forEach((key) => {
+        localStorage.setItem(key, importedData[key]);
+      });
+
+      alert("データをインポートしました。ページをリロードします！");
+      location.reload(); // ページをリロードしてデータを反映
+    } catch (error) {
+      alert("インポートに失敗しました。正しい形式のJSONファイルを選択してください！");
+    }
+  };
+  reader.readAsText(file); // ファイルをテキストとして読み込む
+}
+
+// ローカルストレージにデータを保存操作 -----------------------------------------------
+
+//セクション名の編集と保存機能を追加 --------------------------------------------------
+// セクション名を編集モードに切り替える
+function editSectionName(sectionId) {
+  const title = document.querySelector(`#${sectionId} h2`);
+  const input = document.querySelector(`#${sectionId}-input`);
+
+  // 要素が存在しない場合はエラーを出力して処理を中断
+  if (!title || !input) {
+    console.error(`セクションID ${sectionId} のタイトルまたは入力フィールドが見つかりません`);
+    return;
+  }
+
+  // 現在のセクション名を入力フィールドに設定
+  input.value = title.textContent;
+
+  // セクション名を隠して入力フィールドを表示
+  title.style.display = "none";
+  input.style.display = "block";
+  input.focus();
+}
+
+
+
+// セクション名を保存して通常モードに戻す
+function saveSectionName(sectionId) {
+  const title = document.querySelector(`#${sectionId} h2`);
+  const input = document.querySelector(`#${sectionId}-input`);
+
+  // 要素が存在しない場合はエラーを出力して処理を中断
+  if (!title || !input) {
+    console.error(`セクションID ${sectionId} のタイトルまたは入力フィールドが見つかりません`);
+    return;
+  }
+
+  // 入力された値をセクション名に設定
+  if (input.value.trim() !== "") {
+    title.textContent = input.value.trim();
+  }
+
+  // 入力フィールドを隠してセクション名を表示
+  input.style.display = "none";
+  title.style.display = "block";
+
+  // ローカルストレージに保存（既存データを保持）
+  const existingSectionNames = JSON.parse(localStorage.getItem(sectionNamesKey) || "{}");
+  existingSectionNames[sectionId] = title.textContent;
+  localStorage.setItem(sectionNamesKey, JSON.stringify(existingSectionNames));
+}
+
+
+
+// ローカルストレージにセクション名を保存
+function saveSectionNamesToStorage() {
+  // 既存のセクション名データを読み込み
+  const sectionNames = JSON.parse(localStorage.getItem(sectionNamesKey) || "{}");
+
+  // 現在表示されているセクションのデータで更新（.sectionと.enhanced-sectionの両方）
+  document.querySelectorAll(".section, .enhanced-section").forEach((section) => {
+    const sectionId = section.id;
+    const title = section.querySelector("h2");
+    if (title) {
+      sectionNames[sectionId] = title.textContent;
+    }
+  });
+
+  localStorage.setItem(sectionNamesKey, JSON.stringify(sectionNames));
+}
+
+//セクション名の編集と保存機能を追加 --------------------------------------------------
+
+// メインタイトルの編集機能 --------------------------------------------------
+
+// メインタイトルの編集
+function editMainTitle() {
+  const title = document.getElementById("main-title");
+  const input = document.getElementById("main-title-input");
+  
+  input.value = title.textContent;
+  title.style.display = "none";
+  input.style.display = "block";
+  input.focus();
+  input.select();
+}
+
+// メインタイトルの保存
+function saveMainTitle() {
+  const title = document.getElementById("main-title");
+  const input = document.getElementById("main-title-input");
+  
+  if (input.value.trim() !== "") {
+    const newTitle = input.value.trim();
+    title.textContent = newTitle;
+    
+    // ローカルストレージに保存
+    localStorage.setItem(mainTitleKey, newTitle);
+    
+    // ページのdocument.titleも更新
+    document.title = newTitle;
+    
+    // 他のページのナビゲーションリンクも更新
+    updateNavigationLinksInOtherPages(newTitle);
+    
+    // 現在のページのナビゲーションボタンも更新
+    updateCurrentPageNavigationButton(newTitle);
+  }
+  
+  input.style.display = "none";
+  title.style.display = "block";
+}
+
+// 他のページのナビゲーションリンクのテキストを更新
+function updateNavigationLinksInOtherPages(newTitle) {
+  const currentPage = document.title;
+  const pageMapping = {
+    "My Page": "main",
+    "プロジェクトA": "project-a", 
+    "プロジェクトB": "project-b",
+    "プロジェクトC": "project-c",
+    "プロジェクトD": "project-d"
+  };
+  
+  const currentPageId = pageMapping[currentPage];
+  if (currentPageId) {
+    const navLinksKey = `liteNavTitles_global`;
+    const storedNavTitles = JSON.parse(localStorage.getItem(navLinksKey) || "{}");
+    storedNavTitles[currentPageId] = newTitle;
+    localStorage.setItem(navLinksKey, JSON.stringify(storedNavTitles));
+  }
+}
+
+// 現在のページのナビゲーションボタンを更新
+function updateCurrentPageNavigationButton(newTitle) {
+  // 現在のページのプロジェクトリンクを更新
+  const currentHash = window.location.hash.substring(1);
+  if (currentHash && currentHash !== 'main') {
+    const currentProjectLink = document.querySelector(`a[href="#${currentHash}"]`);
+    if (currentProjectLink) {
+      currentProjectLink.textContent = newTitle;
+    }
+    
+    // プロジェクトデータも更新
+    const project = projects.find(p => p.id === currentHash);
+    if (project) {
+      project.name = newTitle;
+      saveProjects();
+    }
+  }
+}
+
+// メインタイトルでのEnterキー処理
 function handleMainTitleKeypress(event) {
-  if (event.key === 'Enter') {
+  if (event.key === "Enter") {
     saveMainTitle();
   }
 }
 
-// =====================================
-// セクション名編集
-// =====================================
+// SPA機能 - プロジェクト管理 --------------------------------------------------
+const projectsKey = 'liteProjects_data';
+const myPageStartedKey = 'lite_started';
+let projects = [];
 
-function editSectionName(sectionId) {
-  const titleElement = document.querySelector(`#${sectionId} .section-title-text`);
-  const inputElement = document.getElementById(`${sectionId}-input`);
-
-  if (!titleElement || !inputElement) return;
-
-  inputElement.value = titleElement.textContent;
-  titleElement.style.display = 'none';
-  inputElement.style.display = 'inline-block';
-  inputElement.focus();
-  inputElement.select();
-}
-
-function saveSectionName(sectionId) {
-  const titleElement = document.querySelector(`#${sectionId} .section-title-text`);
-  const inputElement = document.getElementById(`${sectionId}-input`);
-
-  if (!titleElement || !inputElement) return;
-
-  const newName = inputElement.value.trim();
-  if (newName) {
-    const data = getData();
-    if (data.sections[sectionId]) {
-      data.sections[sectionId].name = newName;
-      saveData(data);
-      titleElement.textContent = newName;
-    }
+// プロジェクトデータの読み込み
+function loadProjects() {
+  const stored = localStorage.getItem(projectsKey);
+  if (stored) {
+    projects = JSON.parse(stored);
   }
-
-  inputElement.style.display = 'none';
-  titleElement.style.display = 'inline-block';
 }
 
-// =====================================
-// リンク編集モーダル
-// =====================================
-
-function editLinks(sectionId) {
-  currentEditingSectionId = sectionId;
-  const data = getData();
-  const section = data.sections[sectionId];
-
-  if (!section) return;
-
-  // セクション名
-  document.getElementById('edit-section-name').value = section.name;
-
-  // リンク一覧を描画
-  renderModalLinksList();
-
-  // モーダルを開く
-  openModal('edit-links-modal');
-}
-
-function renderModalLinksList() {
-  const data = getData();
-  const section = data.sections[currentEditingSectionId];
-  const listContainer = document.getElementById('modal-links-list');
-
-  if (!section || !listContainer) return;
-
-  listContainer.innerHTML = '';
-
-  if (!section.links || section.links.length === 0) {
-    listContainer.innerHTML = '<p class="empty-message">リンクがありません</p>';
-    return;
+// プロジェクトデータの保存
+function saveProjects() {
+  try {
+    localStorage.setItem(projectsKey, JSON.stringify(projects));
+  } catch (error) {
+    console.error('プロジェクトデータの保存に失敗しました:', error);
+    alert('データの保存に失敗しました。ストレージの容量が不足している可能性があります。');
   }
-
-  section.links.forEach((link, index) => {
-    const linkItem = createModalLinkItem(link, index);
-    listContainer.appendChild(linkItem);
-  });
 }
 
-function createModalLinkItem(link, index) {
-  const div = document.createElement('div');
-  div.className = 'link-item-edit';
-  div.draggable = true;
-  div.dataset.index = index;
+// プロジェクトナビゲーションの更新
+function updateProjectNavigation() {
+  const projectLinks = document.getElementById('project-links');
+  projectLinks.innerHTML = '';
 
-  // ドラッグイベント
-  div.addEventListener('dragstart', handleDragStart);
-  div.addEventListener('dragover', handleDragOver);
-  div.addEventListener('drop', handleDrop);
-  div.addEventListener('dragend', handleDragEnd);
+  projects.forEach((project, index) => {
+    const link = document.createElement('a');
+    link.href = `#${project.id}`;
+    link.className = 'navigation-link nav-tab';
+    link.setAttribute('data-view', project.id);
+    link.setAttribute('data-project-index', index);
+    link.textContent = project.name;
+    link.draggable = true; // ドラッグ可能にする
 
-  div.innerHTML = `
-    <div class="link-drag-handle" title="ドラッグして並び替え">☰</div>
-    <div class="link-edit-fields">
-      <input type="text" class="input-field link-text-input" value="${escapeHtml(link.text)}" placeholder="リンク名" data-index="${index}" data-field="text" />
-      <input type="text" class="input-field link-url-input" value="${escapeHtml(link.url)}" placeholder="URL" data-index="${index}" data-field="url" />
-    </div>
-    <div class="link-edit-actions">
-      <label class="inline-checkbox">
-        <input type="checkbox" ${link.inline ? 'checked' : ''} onchange="toggleInlineMode(${index})">
-        <span>1行表示</span>
-      </label>
-      <button class="btn btn-danger btn-sm" onclick="deleteLink(${index})">削除</button>
-    </div>
-  `;
+    // ドラッグ開始イベント
+    link.addEventListener('dragstart', handleTabDragStart);
 
-  // リアルタイム保存
-  const inputs = div.querySelectorAll('input[type="text"]');
-  inputs.forEach(input => {
-    input.addEventListener('blur', function() {
-      updateLinkField(this.dataset.index, this.dataset.field, this.value);
-    });
-    input.addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') {
-        this.blur();
-      }
-    });
+    // ドラッグオーバーイベント
+    link.addEventListener('dragover', handleTabDragOver);
+
+    // ドロップイベント
+    link.addEventListener('drop', handleTabDrop);
+
+    // ドラッグ終了イベント
+    link.addEventListener('dragend', handleTabDragEnd);
+
+    link.addEventListener('contextmenu', (e) => showDeleteMenu(e, project.id));
+    projectLinks.appendChild(link);
   });
 
-  return div;
+  // タブクリックイベントを追加
+  addTabClickEvents();
 }
 
-function updateLinkField(index, field, value) {
-  const data = getData();
-  const section = data.sections[currentEditingSectionId];
+// プロジェクトタブのドラッグ&ドロップ関連の変数
+let draggedTab = null;
+let draggedTabIndex = null;
 
-  if (!section || !section.links[index]) return;
+// プロジェクトタブのドラッグ開始
+function handleTabDragStart(e) {
+  const indexAttr = e.target.getAttribute('data-project-index');
+  if (indexAttr === null) return; // data-project-indexがない場合は無視
 
-  section.links[index][field] = value;
-  saveData(data);
-  renderSection(currentEditingSectionId);
-}
-
-function saveEditedSectionName() {
-  const newName = document.getElementById('edit-section-name').value.trim();
-
-  if (!newName) {
-    alert('セクション名を入力してください');
-    return;
-  }
-
-  const data = getData();
-  if (data.sections[currentEditingSectionId]) {
-    data.sections[currentEditingSectionId].name = newName;
-    saveData(data);
-    renderSection(currentEditingSectionId);
-  }
-}
-
-function addLink() {
-  const data = getData();
-  const section = data.sections[currentEditingSectionId];
-
-  if (!section) return;
-
-  if (!section.links) {
-    section.links = [];
-  }
-
-  section.links.push({
-    text: '新しいリンク',
-    url: 'https://example.com',
-    inline: false
-  });
-
-  saveData(data);
-  renderModalLinksList();
-  renderSection(currentEditingSectionId);
-}
-
-function deleteLink(index) {
-  if (!confirm('このリンクを削除しますか？')) return;
-
-  const data = getData();
-  const section = data.sections[currentEditingSectionId];
-
-  if (!section || !section.links) return;
-
-  section.links.splice(index, 1);
-  saveData(data);
-  renderModalLinksList();
-  renderSection(currentEditingSectionId);
-}
-
-function toggleInlineMode(index) {
-  const data = getData();
-  const section = data.sections[currentEditingSectionId];
-
-  if (!section || !section.links[index]) return;
-
-  section.links[index].inline = !section.links[index].inline;
-  saveData(data);
-  renderSection(currentEditingSectionId);
-}
-
-// =====================================
-// ドラッグ&ドロップ
-// =====================================
-
-function handleDragStart(e) {
-  draggedLinkIndex = parseInt(e.target.dataset.index);
+  draggedTab = e.target;
+  draggedTabIndex = parseInt(indexAttr);
   e.target.style.opacity = '0.4';
   e.dataTransfer.effectAllowed = 'move';
+}
+
+// プロジェクトタブのドラッグオーバー
+function handleTabDragOver(e) {
+  const indexAttr = e.currentTarget.getAttribute('data-project-index');
+  if (indexAttr === null) return; // data-project-indexがない場合は無視
+
+  if (e.preventDefault) {
+    e.preventDefault();
+  }
+  e.dataTransfer.dropEffect = 'move';
+
+  // ドラッグ中の要素にホバー効果を追加
+  const target = e.currentTarget;
+  if (target !== draggedTab && target.classList.contains('nav-tab')) {
+    target.style.borderTop = '2px solid #007bff';
+  }
+
+  return false;
+}
+
+// プロジェクトタブのドロップ
+function handleTabDrop(e) {
+  if (e.stopPropagation) {
+    e.stopPropagation();
+  }
+  e.preventDefault();
+
+  const dropTarget = e.currentTarget;
+  const dropIndexAttr = dropTarget.getAttribute('data-project-index');
+
+  if (dropIndexAttr === null) {
+    dropTarget.style.borderTop = '';
+    return; // data-project-indexがない場合は無視
+  }
+
+  const dropIndex = parseInt(dropIndexAttr);
+
+  // ドラッグ元とドロップ先が異なる場合のみ並び替え
+  if (draggedTab !== dropTarget && draggedTabIndex !== null && draggedTabIndex !== dropIndex) {
+    // プロジェクト配列を並び替え
+    const draggedProject = projects[draggedTabIndex];
+    projects.splice(draggedTabIndex, 1);
+    projects.splice(dropIndex, 0, draggedProject);
+
+    // localStorageに保存
+    saveProjects();
+
+    // ナビゲーションを更新
+    updateProjectNavigation();
+  }
+
+  // ホバー効果を削除
+  dropTarget.style.borderTop = '';
+
+  return false;
+}
+
+// プロジェクトタブのドラッグ終了
+function handleTabDragEnd(e) {
+  e.target.style.opacity = '1';
+
+  // すべてのホバー効果を削除
+  document.querySelectorAll('.nav-tab').forEach(tab => {
+    tab.style.borderTop = '';
+  });
+}
+
+// タブクリックイベントの追加
+function addTabClickEvents() {
+  document.querySelectorAll('.nav-tab').forEach(tab => {
+    tab.addEventListener('click', (e) => {
+      e.preventDefault();
+      const view = e.target.getAttribute('data-view');
+      switchView(view);
+    });
+  });
+}
+
+// アクティブタブの更新
+function updateActiveTab(activeTab) {
+  document.querySelectorAll('.nav-tab').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  if (activeTab) {
+    activeTab.classList.add('active');
+  }
+}
+
+// ビュー切り替え機能
+function switchView(viewId) {
+  // 全てのビューを非表示
+  document.querySelectorAll('.view').forEach(view => {
+    view.classList.remove('active');
+  });
+  
+  if (viewId === 'main') {
+    document.getElementById('main-view').classList.add('active');
+    updateMainTitle('My Page');
+    // MyPageタブをアクティブにする
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+      tab.classList.remove('active');
+    });
+    const mainTab = document.querySelector('a[data-view="main"]');
+    if (mainTab) {
+      mainTab.classList.add('active');
+    }
+  } else {
+    // プロジェクトビューを表示
+    showProjectView(viewId);
+    // 対応するタブをアクティブにする
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+      tab.classList.remove('active');
+    });
+    const activeTab = document.querySelector(`a[data-view="${viewId}"]`);
+    if (activeTab) {
+      activeTab.classList.add('active');
+    }
+  }
+  
+  // URLハッシュを更新
+  window.location.hash = viewId;
+}
+
+// プロジェクトビューの表示
+function showProjectView(projectId) {
+  const project = projects.find(p => p.id === projectId);
+  if (!project) return;
+  
+  let projectView = document.getElementById(`${projectId}-view`);
+  if (!projectView) {
+    projectView = createProjectView(project);
+    document.getElementById('project-views').appendChild(projectView);
+  }
+  
+  projectView.classList.add('active');
+  updateMainTitle(project.name);
+  
+  // リンクを再描画してアクションボタンが正しく表示されるようにする
+  renderLinks();
+  
+  // プロジェクトビューのファビコンを読み込み
+  setTimeout(() => {
+    const projectLinkCards = document.querySelectorAll('.link-card[data-url]:not([data-favicon-loaded])');
+    projectLinkCards.forEach(card => {
+      loadFavicon(card);
+    });
+  }, 100);
+  
+  // 新しく作成されたプロジェクトビューでもドラッグ&ドロップを有効にする
+  setTimeout(() => {
+    initializeDragAndDropForProject(projectId);
+    // プロジェクトページのセクション順序も復元
+    const projectSectionGrid = projectView.querySelector('.section-grid');
+    if (projectSectionGrid) {
+      restoreSectionOrderForGrid(projectSectionGrid, projectId);
+    }
+
+    // プロジェクトページのセクション名を復元
+    restoreSectionNamesForProject(projectId);
+  }, 100);
+}
+
+// プロジェクトビューの作成
+function createProjectView(project) {
+  const view = document.createElement('div');
+  view.id = `${project.id}-view`;
+  view.className = 'view';
+  
+  // カテゴリ配列（セクションごとに異なるカテゴリを割り当て）
+  const categories = ['work', 'social', 'dev', 'entertainment', 'news', 'shopping'];
+  const categoryNames = ['作業関連のリンク', 'ソーシャル・コミュニケーション', '開発・技術関連', 'エンターテイメント', 'ニュース・情報収集', 'ショッピング・サービス'];
+  
+  view.innerHTML = `
+    <div class="section-grid">
+      ${[1,2,3,4,5,6].map(i => `
+        <div class="section enhanced-section" id="${project.id}-section${i}" data-category="${categories[i-1]}">
+          <div class="section-header">
+            <div class="section-title-area">
+              <h2 onclick="editSectionName('${project.id}-section${i}')" class="section-title-text">セクション${i}</h2>
+              <input type="text" id="${project.id}-section${i}-input" class="section-name-input" onblur="saveSectionName('${project.id}-section${i}')" />
+            </div>
+            <div class="section-actions">
+              <button class="action-btn edit-btn" onclick="editLinks('${project.id}-section${i}')" title="編集">✏️</button>
+            </div>
+          </div>
+          <div class="link-grid">
+            <!-- リンクはrenderLinks()によって動的に生成される -->
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  
+  // 新しいプロジェクトのサンプルリンクデータを初期化
+  initializeProjectLinks(project.id, categories, categoryNames);
+  
+  return view;
+}
+
+// プロジェクトのサンプルリンクデータを初期化
+function initializeProjectLinks(projectId, categories, categoryNames) {
+  for (let i = 1; i <= 6; i++) {
+    const sectionId = `${projectId}-section${i}`;
+    
+    // 既にデータが存在する場合はスキップ
+    if (linksData[sectionId] && linksData[sectionId].length > 0) {
+      continue;
+    }
+    
+    // サンプルリンクデータを作成
+    linksData[sectionId] = [
+      {
+        text: `サンプルリンク${i}-1`,
+        url: `https://example${i}.com`,
+        inline: false
+      },
+      {
+        text: `サンプルリンク${i}-2`,
+        url: `https://example${i}.com`,
+        inline: false
+      }
+    ];
+  }
+  
+  // データを保存
+  saveLinks();
+}
+
+// アクティブタブの更新
+function updateActiveTab(activeTab) {
+  document.querySelectorAll('.nav-tab').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  activeTab.classList.add('active');
+}
+
+// メインタイトルの更新
+function updateMainTitle(title) {
+  const titleElement = document.getElementById('main-title');
+  if (titleElement) {
+    titleElement.textContent = title;
+  }
+}
+
+// 新しいプロジェクトの追加
+function addNewProject() {
+  const name = prompt('プロジェクト名を入力してください:');
+  if (!name) return;
+  
+  // 入力値の検証
+  const trimmedName = name.trim();
+  if (!trimmedName) {
+    alert('プロジェクト名は空にできません。');
+    return;
+  }
+  
+  if (trimmedName.length > 50) {
+    alert('プロジェクト名は50文字以内で入力してください。');
+    return;
+  }
+  
+  // 重複チェック
+  if (projects.some(p => p.name === trimmedName)) {
+    alert('同じ名前のプロジェクトが既に存在します。');
+    return;
+  }
+  
+  const id = `project-${Date.now()}`;
+  const newProject = { id, name: trimmedName, sections: [] };
+  
+  projects.push(newProject);
+  saveProjects();
+  updateProjectNavigation();
+  
+  // 最初のプロジェクトが追加された場合、ウェルカムメッセージを隠す
+  if (projects.length === 1) {
+    hideWelcomeMessage();
+    // プロジェクト作成時もMyPage開始フラグを設定
+    localStorage.setItem(myPageStartedKey, 'true');
+  }
+  
+  // 作成したプロジェクトを選択状態にする
+  switchView(id);
+}
+
+// フッターからのページ削除ダイアログ
+function showDeleteProjectDialog() {
+  if (projects.length === 0) {
+    alert('削除可能なページがありません。');
+    return;
+  }
+  
+  // モーダルを作成してプルダウン選択で削除対象を選択
+  createDeleteProjectModal();
+}
+
+// プロジェクト削除用モーダルの作成
+function createDeleteProjectModal() {
+  // 既存のモーダルがあれば削除
+  const existingModal = document.getElementById('delete-project-modal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+  
+  // モーダル要素を作成
+  const modal = document.createElement('div');
+  modal.id = 'delete-project-modal';
+  modal.className = 'modal';
+  
+  modal.innerHTML = `
+    <div class="modal-content">
+      <h3>ページ削除</h3>
+      <div class="delete-form">
+        <label for="project-select">削除するページを選択してください:</label>
+        <select id="project-select" class="project-select">
+          <option value="">選択してください...</option>
+          ${projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="modal-buttons">
+        <button id="delete-confirm-btn" onclick="confirmDeleteProject()" disabled>削除</button>
+        <button onclick="closeDeleteProjectModal()">キャンセル</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  modal.style.display = 'flex';
+  
+  // プルダウン選択時のイベントリスナー
+  const selectElement = document.getElementById('project-select');
+  const deleteButton = document.getElementById('delete-confirm-btn');
+  
+  selectElement.addEventListener('change', function() {
+    deleteButton.disabled = !this.value;
+  });
+}
+
+// プロジェクト削除の確認
+function confirmDeleteProject() {
+  const selectElement = document.getElementById('project-select');
+  const selectedProjectId = selectElement.value;
+  
+  if (!selectedProjectId) {
+    alert('削除するページを選択してください。');
+    return;
+  }
+  
+  const selectedProject = projects.find(p => p.id === selectedProjectId);
+  if (!selectedProject) {
+    alert('選択されたページが見つかりません。');
+    return;
+  }
+  
+  if (confirm(`「${selectedProject.name}」を削除しますか？`)) {
+    deleteProject(selectedProject.id);
+    closeDeleteProjectModal();
+  }
+}
+
+// プロジェクト削除モーダルを閉じる
+function closeDeleteProjectModal() {
+  const modal = document.getElementById('delete-project-modal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+// ヘッダーリンク関連の関数
+function renderHeaderLinks() {
+  const container = document.getElementById('header-links-container');
+  if (!container) return;
+  
+  container.innerHTML = '';
+  
+  // 最大5個までのリンクを表示
+  const linksToShow = headerLinksData.slice(0, 5);
+  
+  linksToShow.forEach(link => {
+    const linkElement = document.createElement('a');
+    linkElement.href = link.url;
+    linkElement.target = '_blank';
+    linkElement.className = 'header-link';
+    linkElement.textContent = link.text;
+    container.appendChild(linkElement);
+  });
+}
+
+function saveHeaderLinks() {
+  localStorage.setItem(headerLinksKey, JSON.stringify(headerLinksData));
+}
+
+function editHeaderLinks() {
+  // モーダルのタイトルを変更
+  document.getElementById('modal-title').textContent = 'ヘッダーリンクの編集';
+  
+  // 他のモードを非表示にして、ヘッダーリンク編集モードを表示
+  document.getElementById('single-edit-mode').style.display = 'none';
+  document.getElementById('list-edit-mode').style.display = 'none';
+  document.getElementById('header-links-edit-mode').style.display = 'block';
+  
+  // ヘッダーリンクのリストを描画
+  renderHeaderLinksModal();
+  
+  // モーダルを表示
+  document.getElementById('modal').style.display = 'flex';
+}
+
+function renderHeaderLinksModal() {
+  const list = document.getElementById('modal-header-link-list');
+  if (!list) return;
+  
+  // ヘッダーリンクデータを強制確認
+  if (!headerLinksData || headerLinksData.length === 0) {
+    headerLinksData = [
+      { text: 'Google', url: 'https://www.google.co.jp/' },
+      { text: 'Claude', url: 'https://claude.ai/' }
+    ];
+    saveHeaderLinks();
+  }
+  
+  list.innerHTML = '';
+  
+  headerLinksData.forEach((link, index) => {
+    const listItem = document.createElement('li');
+    listItem.draggable = true;
+    listItem.dataset.index = index;
+    
+    // ドラッグハンドル
+    const dragHandle = document.createElement('div');
+    dragHandle.className = 'drag-handle';
+    dragHandle.textContent = '⋮⋮';
+    
+    // リンク情報
+    const linkInfo = document.createElement('div');
+    linkInfo.className = 'header-link-info';
+    linkInfo.innerHTML = `
+      <div class="header-link-title">${link.text}</div>
+      <div class="header-link-url">${link.url}</div>
+    `;
+    
+    // アクションボタン
+    const linkActions = document.createElement('div');
+    linkActions.className = 'link-actions';
+    
+    const editButton = document.createElement('button');
+    editButton.textContent = '編集';
+    editButton.onclick = () => editHeaderLinkItem(index);
+    
+    const deleteButton = document.createElement('button');
+    deleteButton.textContent = '削除';
+    deleteButton.onclick = () => removeHeaderLink(index);
+    
+    linkActions.appendChild(editButton);
+    linkActions.appendChild(deleteButton);
+    
+    // リストアイテムに追加
+    listItem.appendChild(dragHandle);
+    listItem.appendChild(linkInfo);
+    listItem.appendChild(linkActions);
+    
+    // ドラッグ&ドロップイベントリスナーを追加
+    listItem.addEventListener('dragstart', handleHeaderLinkDragStart);
+    listItem.addEventListener('dragover', handleHeaderLinkDragOver);
+    listItem.addEventListener('drop', handleHeaderLinkDrop);
+    listItem.addEventListener('dragend', handleHeaderLinkDragEnd);
+    listItem.addEventListener('dragenter', handleHeaderLinkDragEnter);
+    listItem.addEventListener('dragleave', handleHeaderLinkDragLeave);
+    
+    list.appendChild(listItem);
+  });
+}
+
+function addHeaderLink() {
+  const textInput = document.getElementById('new-header-link-text');
+  const urlInput = document.getElementById('new-header-link-url');
+  
+  const text = textInput.value.trim();
+  const url = urlInput.value.trim();
+  
+  if (!text || !url) {
+    alert('リンクテキストとURLを入力してください。');
+    return;
+  }
+  
+  // 最大5個まで
+  if (headerLinksData.length >= 5) {
+    alert('ヘッダーリンクは最大5個までです。');
+    return;
+  }
+  
+  headerLinksData.push({ text, url });
+  saveHeaderLinks();
+  renderHeaderLinks();
+  renderHeaderLinksModal();
+  
+  // 入力フィールドをクリア
+  textInput.value = '';
+  urlInput.value = '';
+}
+
+function removeHeaderLink(index) {
+  if (confirm('このリンクを削除しますか？')) {
+    headerLinksData.splice(index, 1);
+    saveHeaderLinks();
+    renderHeaderLinks();
+    renderHeaderLinksModal();
+  }
+}
+
+function editHeaderLinkItem(index) {
+  try {
+    const link = headerLinksData[index];
+    if (!link) {
+      console.error('Link not found at index:', index);
+      return;
+    }
+    
+    const listItem = document.querySelector(`#modal-header-link-list li:nth-child(${index + 1})`);
+    if (!listItem) {
+      console.error('List item not found at index:', index);
+      return;
+    }
+    
+    // 編集フォームを作成
+    const editForm = document.createElement('div');
+    editForm.className = 'header-link-edit-form';
+    editForm.innerHTML = `
+      <div class="edit-form-row">
+        <input type="text" class="edit-text-input" value="${link.text}" placeholder="リンクテキスト">
+        <input type="url" class="edit-url-input" value="${link.url}" placeholder="URL">
+      </div>
+      <div class="edit-form-actions">
+        <button class="save-btn" onclick="saveHeaderLinkEdit(${index})">保存</button>
+        <button class="cancel-btn" onclick="cancelHeaderLinkEdit(${index})">キャンセル</button>
+      </div>
+    `;
+    
+    // 元の内容を保存
+    listItem.dataset.originalContent = listItem.innerHTML;
+    
+    // 編集フォームに置き換え
+    listItem.innerHTML = '';
+    listItem.appendChild(editForm);
+    
+    // テキストフィールドにフォーカス
+    const textInput = editForm.querySelector('.edit-text-input');
+    if (textInput) {
+      textInput.focus();
+      textInput.select();
+    }
+  } catch (error) {
+    console.error('Error in editHeaderLinkItem:', error);
+    alert('編集モードの開始に失敗しました。');
+  }
+}
+
+function saveHeaderLinkEdit(index) {
+  try {
+    const listItem = document.querySelector(`#modal-header-link-list li:nth-child(${index + 1})`);
+    if (!listItem) {
+      console.error('List item not found for save:', index);
+      return;
+    }
+    
+    const textInput = listItem.querySelector('.edit-text-input');
+    const urlInput = listItem.querySelector('.edit-url-input');
+    
+    if (!textInput || !urlInput) {
+      console.error('Input fields not found');
+      return;
+    }
+    
+    const newText = textInput.value.trim();
+    const newUrl = urlInput.value.trim();
+    
+    if (!newText || !newUrl) {
+      alert('リンクテキストとURLを入力してください。');
+      return;
+    }
+    
+    headerLinksData[index] = { text: newText, url: newUrl };
+    saveHeaderLinks();
+    renderHeaderLinks();
+    renderHeaderLinksModal();
+  } catch (error) {
+    console.error('Error in saveHeaderLinkEdit:', error);
+    alert('変更の保存に失敗しました。');
+  }
+}
+
+function cancelHeaderLinkEdit(index) {
+  try {
+    const listItem = document.querySelector(`#modal-header-link-list li:nth-child(${index + 1})`);
+    if (!listItem) {
+      console.error('List item not found for cancel:', index);
+      return;
+    }
+    
+    if (listItem.dataset.originalContent) {
+      listItem.innerHTML = listItem.dataset.originalContent;
+    } else {
+      console.error('Original content not found');
+      // フォールバック: モーダル全体を再描画
+      renderHeaderLinksModal();
+    }
+  } catch (error) {
+    console.error('Error in cancelHeaderLinkEdit:', error);
+    // エラー時はモーダル全体を再描画
+    renderHeaderLinksModal();
+  }
+}
+
+function cancelHeaderEdit() {
+  closeModal();
+}
+
+
+// ヘッダーリンク用ドラッグ&ドロップハンドラー
+function handleHeaderLinkDragStart(e) {
+  draggedHeaderLinkElement = this;
+  draggedHeaderLinkIndex = parseInt(this.dataset.index);
+  this.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/html', this.outerHTML);
+}
+
+function handleHeaderLinkDragEnd(e) {
+  this.classList.remove('dragging');
+  
+  // 全てのドロップゾーンハイライトを削除
+  const allItems = document.querySelectorAll('#modal-header-link-list li');
+  allItems.forEach(item => {
+    item.classList.remove('drag-over');
+  });
+  
+  draggedHeaderLinkElement = null;
+  draggedHeaderLinkIndex = null;
+}
+
+function handleHeaderLinkDragOver(e) {
+  if (e.preventDefault) {
+    e.preventDefault();
+  }
+  
+  if (draggedHeaderLinkElement && draggedHeaderLinkElement !== this) {
+    this.classList.add('drag-over');
+    e.dataTransfer.dropEffect = 'move';
+  }
+  
+  return false;
+}
+
+function handleHeaderLinkDragEnter(e) {
+  if (draggedHeaderLinkElement && draggedHeaderLinkElement !== this) {
+    this.classList.add('drag-over');
+  }
+}
+
+function handleHeaderLinkDragLeave(e) {
+  this.classList.remove('drag-over');
+}
+
+function handleHeaderLinkDrop(e) {
+  if (e.stopPropagation) {
+    e.stopPropagation();
+  }
+  
+  if (draggedHeaderLinkElement !== this && draggedHeaderLinkIndex !== null) {
+    const targetIndex = parseInt(this.dataset.index);
+    
+    // ヘッダーリンクデータの順番を変更
+    const draggedLink = headerLinksData[draggedHeaderLinkIndex];
+    headerLinksData.splice(draggedHeaderLinkIndex, 1);
+    
+    // 新しい位置に挿入
+    if (draggedHeaderLinkIndex < targetIndex) {
+      headerLinksData.splice(targetIndex - 1, 0, draggedLink);
+    } else {
+      headerLinksData.splice(targetIndex, 0, draggedLink);
+    }
+    
+    // データを保存して表示を更新
+    saveHeaderLinks();
+    renderHeaderLinks();
+    renderHeaderLinksModal();
+  }
+  
+  this.classList.remove('drag-over');
+  return false;
+}
+
+// リンク項目のドラッグ&ドロップ機能
+let draggedLinkElement = null;
+let draggedLinkIndex = null;
+
+// ヘッダーリンク用のドラッグ&ドロップ変数
+let draggedHeaderLinkElement = null;
+let draggedHeaderLinkIndex = null;
+
+function handleLinkDragStart(e) {
+  draggedLinkElement = this;
+  draggedLinkIndex = parseInt(this.dataset.index);
+  this.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/html', this.outerHTML);
+}
+
+function handleLinkDragEnd(e) {
+  this.classList.remove('dragging');
+  
+  // すべてのリンク項目からdrag-overクラスを削除
+  document.querySelectorAll('#modal-link-list li').forEach(item => {
+    item.classList.remove('drag-over');
+  });
+  
+  draggedLinkElement = null;
+  draggedLinkIndex = null;
+}
+
+function handleLinkDragOver(e) {
+  if (e.preventDefault) {
+    e.preventDefault();
+  }
+  e.dataTransfer.dropEffect = 'move';
+  return false;
+}
+
+function handleLinkDragEnter(e) {
+  if (this !== draggedLinkElement) {
+    this.classList.add('drag-over');
+  }
+}
+
+function handleLinkDragLeave(e) {
+  this.classList.remove('drag-over');
+}
+
+function handleLinkDrop(e) {
+  if (e.stopPropagation) {
+    e.stopPropagation();
+  }
+  
+  if (draggedLinkElement !== this && draggedLinkIndex !== null) {
+    const targetIndex = parseInt(this.dataset.index);
+    
+    // リンクデータの順番を変更
+    const draggedLink = linksData[currentSectionId][draggedLinkIndex];
+    linksData[currentSectionId].splice(draggedLinkIndex, 1);
+    linksData[currentSectionId].splice(targetIndex, 0, draggedLink);
+    
+    // ローカルストレージに保存
+    saveLinks();
+    
+    // 表示を更新
+    renderLinks();
+    editLinks(currentSectionId);
+    
+    // 並び替え後のファビコンを読み込み
+    setTimeout(() => {
+      const reorderedLinkCards = document.querySelectorAll('.link-card[data-url]:not([data-favicon-loaded])');
+      reorderedLinkCards.forEach(card => {
+        loadFavicon(card);
+      });
+    }, 50);
+  }
+  
+  this.classList.remove('drag-over');
+  return false;
+}
+
+// ドラッグ&ドロップ機能
+function initializeDragAndDrop() {
+  const sectionGrid = document.querySelector('#main-view .section-grid');
+  if (!sectionGrid) {
+    console.log('Section grid not found for drag and drop');
+    return;
+  }
+
+  // 各セクションにドラッグ機能を追加
+  const sections = sectionGrid.querySelectorAll('.section');
+  console.log('Initializing drag and drop for', sections.length, 'sections');
+  
+  sections.forEach(section => {
+    // 既存のイベントリスナーを削除
+    section.removeEventListener('dragstart', handleDragStart);
+    section.removeEventListener('dragend', handleDragEnd);
+    section.removeEventListener('dragover', handleDragOver);
+    section.removeEventListener('drop', handleDrop);
+    section.removeEventListener('dragenter', handleDragEnter);
+    section.removeEventListener('dragleave', handleDragLeave);
+    
+    section.draggable = true;
+    
+    section.addEventListener('dragstart', handleDragStart);
+    section.addEventListener('dragend', handleDragEnd);
+    section.addEventListener('dragover', handleDragOver);
+    section.addEventListener('drop', handleDrop);
+    section.addEventListener('dragenter', handleDragEnter);
+    section.addEventListener('dragleave', handleDragLeave);
+  });
+}
+
+// プロジェクト専用のドラッグ&ドロップ初期化
+function initializeDragAndDropForProject(projectId) {
+  const projectView = document.getElementById(`${projectId}-view`);
+  if (!projectView) return;
+  
+  const sectionGrid = projectView.querySelector('.section-grid');
+  if (!sectionGrid) {
+    console.log('Project section grid not found for drag and drop:', projectId);
+    return;
+  }
+
+  const sections = sectionGrid.querySelectorAll('.section');
+  console.log('Initializing drag and drop for project', projectId, 'with', sections.length, 'sections');
+  
+  sections.forEach(section => {
+    // 既存のイベントリスナーを削除
+    section.removeEventListener('dragstart', handleDragStart);
+    section.removeEventListener('dragend', handleDragEnd);
+    section.removeEventListener('dragover', handleDragOver);
+    section.removeEventListener('drop', handleDrop);
+    section.removeEventListener('dragenter', handleDragEnter);
+    section.removeEventListener('dragleave', handleDragLeave);
+    
+    section.draggable = true;
+    
+    section.addEventListener('dragstart', handleDragStart);
+    section.addEventListener('dragend', handleDragEnd);
+    section.addEventListener('dragover', handleDragOver);
+    section.addEventListener('drop', handleDrop);
+    section.addEventListener('dragenter', handleDragEnter);
+    section.addEventListener('dragleave', handleDragLeave);
+  });
+}
+
+let draggedElement = null;
+
+function handleDragStart(e) {
+  draggedElement = this;
+  this.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/html', this.outerHTML);
+}
+
+function handleDragEnd(e) {
+  this.classList.remove('dragging');
+  
+  // すべてのセクションからdrag-overクラスを削除
+  const sections = document.querySelectorAll('.section');
+  sections.forEach(section => {
+    section.classList.remove('drag-over');
+  });
+  
+  draggedElement = null;
 }
 
 function handleDragOver(e) {
@@ -431,355 +1852,206 @@ function handleDragOver(e) {
   return false;
 }
 
+function handleDragEnter(e) {
+  this.classList.add('drag-over');
+}
+
+function handleDragLeave(e) {
+  this.classList.remove('drag-over');
+}
+
 function handleDrop(e) {
   if (e.stopPropagation) {
     e.stopPropagation();
   }
-
-  const dropIndex = parseInt(e.target.closest('.link-item-edit').dataset.index);
-
-  if (draggedLinkIndex !== dropIndex) {
-    const data = getData();
-    const section = data.sections[currentEditingSectionId];
-
-    if (!section || !section.links) return false;
-
-    const draggedItem = section.links[draggedLinkIndex];
-    section.links.splice(draggedLinkIndex, 1);
-    section.links.splice(dropIndex, 0, draggedItem);
-
-    saveData(data);
-    renderModalLinksList();
-    renderSection(currentEditingSectionId);
+  
+  if (draggedElement !== this) {
+    // 現在のセクションの親グリッドを取得
+    const sectionGrid = draggedElement.parentElement;
+    const draggedIndex = Array.from(sectionGrid.children).indexOf(draggedElement);
+    const targetIndex = Array.from(sectionGrid.children).indexOf(this);
+    
+    if (draggedIndex < targetIndex) {
+      sectionGrid.insertBefore(draggedElement, this.nextSibling);
+    } else {
+      sectionGrid.insertBefore(draggedElement, this);
+    }
+    
+    // セクションの順序をローカルストレージに保存
+    saveSectionOrderForGrid(sectionGrid);
   }
-
+  
+  this.classList.remove('drag-over');
   return false;
 }
 
-function handleDragEnd(e) {
-  e.target.style.opacity = '1';
+// セクションの順序を保存（メインページ用）
+function saveSectionOrder() {
+  const sectionGrid = document.querySelector('#main-view .section-grid');
+  if (sectionGrid) {
+    saveSectionOrderForGrid(sectionGrid);
+  }
 }
 
-// =====================================
-// ヘッダーリンク
-// =====================================
+// 指定されたグリッドのセクション順序を保存
+function saveSectionOrderForGrid(sectionGrid) {
+  const sectionOrder = Array.from(sectionGrid.children).map(section => section.id);
+  
+  // メインページかプロジェクトページかを判定
+  const parentView = sectionGrid.closest('.view');
+  const viewId = parentView ? parentView.id.replace('-view', '') : 'main';
+  
+  const storageKey = viewId === 'main' ? 'liteSectionOrder' : `liteSectionOrder_${viewId}`;
+  localStorage.setItem(storageKey, JSON.stringify(sectionOrder));
+  
+  console.log('Saved section order for', viewId, ':', sectionOrder);
+}
 
-function renderHeaderLinks() {
-  const data = getData();
-  const container = document.getElementById('header-links-container');
+// セクションの順序を復元（メインページ用）
+function restoreSectionOrder() {
+  const sectionGrid = document.querySelector('#main-view .section-grid');
+  if (sectionGrid) {
+    restoreSectionOrderForGrid(sectionGrid, 'main');
+  }
+}
 
-  if (!container) return;
-
-  container.innerHTML = '';
-
-  if (!data.headerLinks || data.headerLinks.length === 0) return;
-
-  data.headerLinks.forEach(link => {
-    const a = document.createElement('a');
-    a.href = link.url;
-    a.textContent = link.text;
-    a.className = 'header-link';
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    container.appendChild(a);
+// 指定されたグリッドのセクション順序を復元
+function restoreSectionOrderForGrid(sectionGrid, viewId) {
+  const storageKey = viewId === 'main' ? 'liteSectionOrder' : `liteSectionOrder_${viewId}`;
+  const storedOrder = JSON.parse(localStorage.getItem(storageKey) || '[]');
+  
+  if (storedOrder.length === 0) return;
+  
+  const sections = Array.from(sectionGrid.children);
+  
+  // 保存された順序に従ってセクションを並び替え
+  storedOrder.forEach(sectionId => {
+    const section = sections.find(s => s.id === sectionId);
+    if (section) {
+      sectionGrid.appendChild(section);
+    }
   });
+  
+  console.log('Restored section order for', viewId, ':', storedOrder);
 }
 
-function editHeaderLinks() {
-  renderHeaderLinksList();
-  openModal('edit-header-links-modal');
-}
+// プロジェクトページのセクション名を復元
+function restoreSectionNamesForProject(projectId) {
+  const storedSectionNames = JSON.parse(localStorage.getItem(sectionNamesKey) || "{}");
 
-function renderHeaderLinksList() {
-  const data = getData();
-  const listContainer = document.getElementById('header-links-list');
+  // プロジェクトの各セクション（1〜6）のセクション名を復元
+  for (let i = 1; i <= 6; i++) {
+    const sectionId = `${projectId}-section${i}`;
+    const title = document.querySelector(`#${sectionId} h2`);
 
-  if (!listContainer) return;
-
-  listContainer.innerHTML = '';
-
-  if (!data.headerLinks || data.headerLinks.length === 0) {
-    listContainer.innerHTML = '<p class="empty-message">ヘッダーリンクがありません</p>';
-    return;
+    if (title && storedSectionNames[sectionId]) {
+      title.textContent = storedSectionNames[sectionId];
+    }
   }
 
-  data.headerLinks.forEach((link, index) => {
-    const linkItem = createHeaderLinkItem(link, index);
-    listContainer.appendChild(linkItem);
-  });
+  console.log('Restored section names for project:', projectId);
 }
 
-function createHeaderLinkItem(link, index) {
-  const div = document.createElement('div');
-  div.className = 'link-item-edit';
+// プロジェクト削除メニューの表示
+function showDeleteMenu(e, projectId) {
+  e.preventDefault();
+  
+  if (confirm('このプロジェクトを削除しますか？')) {
+    deleteProject(projectId);
+  }
+}
 
-  div.innerHTML = `
-    <div class="link-edit-fields">
-      <input type="text" class="input-field link-text-input" value="${escapeHtml(link.text)}" placeholder="リンク名" data-index="${index}" data-field="text" />
-      <input type="text" class="input-field link-url-input" value="${escapeHtml(link.url)}" placeholder="URL" data-index="${index}" data-field="url" />
-    </div>
-    <div class="link-edit-actions">
-      <button class="btn btn-danger btn-sm" onclick="deleteHeaderLink(${index})">削除</button>
+// プロジェクトの削除
+function deleteProject(projectId) {
+  projects = projects.filter(p => p.id !== projectId);
+  saveProjects();
+  updateProjectNavigation();
+  
+  // プロジェクトビューも削除
+  const projectView = document.getElementById(`${projectId}-view`);
+  if (projectView) {
+    projectView.remove();
+  }
+  
+  // プロジェクトのセクション順序データも削除
+  localStorage.removeItem(`liteSectionOrder_${projectId}`);
+  
+  // メインビューに戻る
+  switchView('main');
+  
+  // 全てのプロジェクトが削除された場合、MyPageが開始されていなければウェルカムメッセージを表示
+  const myPageStarted = localStorage.getItem(myPageStartedKey) === 'true';
+  if (projects.length === 0 && !myPageStarted) {
+    showWelcomeMessage();
+  }
+}
+
+// ウェルカムメッセージの表示
+function showWelcomeMessage() {
+  const mainView = document.getElementById('main-view');
+  const welcomeDiv = document.createElement('div');
+  welcomeDiv.id = 'welcome-message';
+  welcomeDiv.className = 'welcome-message';
+  welcomeDiv.innerHTML = `
+    <div class="welcome-content">
+      <h2>🎉 My Pageへようこそ！</h2>
+      <p>パーソナルページ管理システムを始めましょう。<br>
+      まずはMyPageでリンクを整理してみませんか？</p>
+      
+      <div class="welcome-actions">
+        <button onclick="startMyPage()" class="start-mypage-btn">
+          📄 MyPageを始める
+        </button>
+        <button onclick="addNewProject()" class="add-project-btn">
+          📂 新しいプロジェクトを追加
+        </button>
+      </div>
+      
+      <div class="welcome-features">
+        <h3>✨ 主な機能</h3>
+        <ul>
+          <li>📄 MyPage: メインのリンク管理ページ</li>
+          <li>📂 プロジェクトページの追加・削除</li>
+          <li>📝 セクションとリンクの管理</li>
+          <li>🔄 ドラッグ&ドロップでリンクの並び替え</li>
+          <li>💾 データの自動保存</li>
+          <li>📤 エクスポート・インポート機能</li>
+        </ul>
+      </div>
     </div>
   `;
-
-  // リアルタイム保存
-  const inputs = div.querySelectorAll('input[type="text"]');
-  inputs.forEach(input => {
-    input.addEventListener('blur', function() {
-      updateHeaderLinkField(this.dataset.index, this.dataset.field, this.value);
-    });
-    input.addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') {
-        this.blur();
-      }
-    });
-  });
-
-  return div;
-}
-
-function updateHeaderLinkField(index, field, value) {
-  const data = getData();
-
-  if (!data.headerLinks[index]) return;
-
-  data.headerLinks[index][field] = value;
-  saveData(data);
-  renderHeaderLinks();
-}
-
-function addHeaderLink() {
-  const data = getData();
-
-  if (!data.headerLinks) {
-    data.headerLinks = [];
+  
+  // 既存のセクショングリッドを隠す
+  const sectionGrid = mainView.querySelector('.section-grid');
+  if (sectionGrid) {
+    sectionGrid.style.display = 'none';
   }
+  
+  mainView.appendChild(welcomeDiv);
+}
 
-  // 最大5個まで制限
-  if (data.headerLinks.length >= 5) {
-    alert('ヘッダーリンクは最大5個までです');
-    return;
+// ウェルカムメッセージを隠す
+function hideWelcomeMessage() {
+  const welcomeMessage = document.getElementById('welcome-message');
+  if (welcomeMessage) {
+    welcomeMessage.remove();
   }
-
-  data.headerLinks.push({
-    text: '新しいリンク',
-    url: 'https://example.com'
-  });
-
-  saveData(data);
-  renderHeaderLinksList();
-  renderHeaderLinks();
-}
-
-function deleteHeaderLink(index) {
-  if (!confirm('このヘッダーリンクを削除しますか？')) return;
-
-  const data = getData();
-
-  if (!data.headerLinks) return;
-
-  data.headerLinks.splice(index, 1);
-  saveData(data);
-  renderHeaderLinksList();
-  renderHeaderLinks();
-}
-
-// =====================================
-// データインポート/エクスポート
-// =====================================
-
-function exportData() {
-  const data = getData();
-  const exportData = {
-    version: '1.0.0',
-    timestamp: new Date().toISOString(),
-    data: data
-  };
-
-  const dataStr = JSON.stringify(exportData, null, 2);
-  const dataBlob = new Blob([dataStr], { type: 'application/json' });
-
-  const url = URL.createObjectURL(dataBlob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `bookmarks-lite-${new Date().toISOString().split('T')[0]}.json`;
-
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-
-  URL.revokeObjectURL(url);
-
-  alert('データをエクスポートしました');
-}
-
-function importData(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const importedData = JSON.parse(e.target.result);
-
-      if (!importedData.data) {
-        alert('無効なデータ形式です');
-        return;
-      }
-
-      if (confirm('現在のデータを上書きしてインポートしますか？\n（現在のデータは失われます）')) {
-        saveData(importedData.data);
-        renderAll();
-        alert('データをインポートしました');
-      }
-    } catch (error) {
-      alert('データの読み込みに失敗しました: ' + error.message);
-    }
-  };
-
-  reader.readAsText(file);
-
-  // ファイル入力をリセット
-  event.target.value = '';
-}
-
-// =====================================
-// モーダル管理
-// =====================================
-
-function openModal(modalId) {
-  const modal = document.getElementById(modalId);
-  if (modal) {
-    modal.style.display = 'flex';
+  
+  // セクショングリッドを表示
+  const sectionGrid = document.querySelector('#main-view .section-grid');
+  if (sectionGrid) {
+    sectionGrid.style.display = 'grid';
   }
 }
 
-function closeModal(modalId) {
-  const modal = document.getElementById(modalId);
-  if (modal) {
-    modal.style.display = 'none';
-  }
+// MyPageを始める機能 --------------------------------------------------
+function startMyPage() {
+  // MyPage開始フラグを保存
+  localStorage.setItem(myPageStartedKey, 'true');
+  hideWelcomeMessage();
+  // MyPageタブをアクティブにする
+  switchView('main');
 }
 
-// =====================================
-// ページ管理
-// =====================================
 
-function renderPageTabs() {
-  const pages = getAllPages();
-  const container = document.getElementById('page-tabs-container');
 
-  if (!container) return;
-
-  container.innerHTML = '';
-
-  pages.forEach(pageId => {
-    const tab = document.createElement('button');
-    tab.className = 'page-tab' + (pageId === currentPageId ? ' active' : '');
-    tab.textContent = pageId === 'main' ? 'メイン' : pageId;
-    tab.onclick = () => switchPage(pageId);
-
-    // 削除ボタン（メインページ以外）
-    if (pageId !== 'main') {
-      const deleteBtn = document.createElement('span');
-      deleteBtn.className = 'page-tab-delete';
-      deleteBtn.textContent = '×';
-      deleteBtn.onclick = (e) => {
-        e.stopPropagation();
-        showDeletePageDialog(pageId);
-      };
-      tab.appendChild(deleteBtn);
-    }
-
-    container.appendChild(tab);
-  });
-}
-
-function switchPage(pageId) {
-  currentPageId = pageId;
-  renderAll();
-}
-
-function addNewPage() {
-  const pageName = prompt('新しいページ名を入力してください:');
-
-  if (!pageName) return;
-
-  if (pageName.trim() === '') {
-    alert('ページ名を入力してください');
-    return;
-  }
-
-  if (pageName === 'main') {
-    alert('このページ名は使用できません');
-    return;
-  }
-
-  const pages = getAllPages();
-
-  // 重複チェック
-  if (pages.includes(pageName)) {
-    alert('このページ名は既に使用されています');
-    return;
-  }
-
-  // ページを追加
-  pages.push(pageName);
-  savePages(pages);
-
-  // 新しいページのデフォルトデータを作成
-  currentPageId = pageName;
-  const defaultData = getDefaultPageData(pageName);
-  saveData(defaultData);
-
-  // ページを切り替えて描画
-  renderAll();
-}
-
-function showDeletePageDialog(pageId) {
-  pageToDelete = pageId;
-  document.getElementById('delete-page-name').textContent = pageId;
-  openModal('delete-page-modal');
-}
-
-function confirmDeletePage() {
-  if (!pageToDelete) return;
-
-  const pages = getAllPages();
-  const index = pages.indexOf(pageToDelete);
-
-  if (index === -1) return;
-
-  // ページリストから削除
-  pages.splice(index, 1);
-  savePages(pages);
-
-  // LocalStorageからデータを削除
-  const key = `liteData_${pageToDelete}`;
-  localStorage.removeItem(key);
-
-  // 現在のページが削除されたページの場合、メインページに切り替え
-  if (currentPageId === pageToDelete) {
-    currentPageId = 'main';
-  }
-
-  pageToDelete = null;
-  closeModal('delete-page-modal');
-  renderAll();
-}
-
-// =====================================
-// ユーティリティ
-// =====================================
-
-function escapeHtml(text) {
-  const map = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;'
-  };
-  return text.replace(/[&<>"']/g, m => map[m]);
-}

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TODOリスト</title>
+    <link rel="stylesheet" href="../css/shared-header.css">
+    <link rel="stylesheet" href="../css/todo-style.css">
+    <link rel="stylesheet" href="../css/page-overrides.css">
+</head>
+<body>
+    <div class="page-container">
+        <header class="unified-header">
+            <button class="back-button">
+                <a href="../index.html" class="back-button-link">🏠 ホームに戻る</a>
+            </button>
+            <h1>TODOリスト</h1>
+            <button class="help-button" onclick="openHelpModal()">?</button>
+        </header>
+        <main class="page-main">
+        <div class="todo-container">
+            <!-- タスク追加エリア -->
+            <div class="todo-add-section">
+                <input type="text" id="todo-new-task" placeholder="新しいタスクを入力" class="todo-input">
+                <select id="todo-task-type" class="todo-select">
+                    <option value="single">単発タスク</option>
+                    <option value="daily">日次タスク</option>
+                    <option value="weekly">週次タスク</option>
+                </select>
+                <button id="todo-add-task-btn" class="todo-button">追加</button>
+            </div>
+            
+            <!-- タスク一覧 -->
+            <div class="todo-lists-container">
+                <div class="todo-section">
+                    <h2>通常タスク</h2>
+                    <ul id="todo-task-list" class="todo-list"></ul>
+                </div>
+                
+                <div class="todo-section">
+                    <h2>繰り返しタスク</h2>
+                    <ul id="todo-recurring-list" class="todo-list"></ul>
+                </div>
+            </div>
+            
+            <!-- 統計エリア -->
+            <div class="todo-stats-section">
+                <h2>完了統計</h2>
+                <div class="stats-container">
+                    <div class="stat-item">
+                        <span class="stat-label">今日の完了率</span>
+                        <span class="stat-value" id="today-completion">0%</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">今週の完了率</span>
+                        <span class="stat-value" id="week-completion">0%</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">今月の完了率</span>
+                        <span class="stat-value" id="month-completion">0%</span>
+                    </div>
+                </div>
+                <canvas id="completion-chart" width="400" height="200"></canvas>
+            </div>
+            
+            <div class="todo-actions">
+                <button id="todo-clear-completed" class="todo-button todo-clear-btn">完了タスクをすべて削除</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- 説明モーダル -->
+    <div id="helpModal" class="help-modal">
+        <div class="help-modal-content">
+            <span class="help-modal-close" onclick="closeHelpModal()">&times;</span>
+            <h2>TODOリスト 使い方ガイド</h2>
+            
+            <div class="help-section">
+                <h3>➕ タスクの追加</h3>
+                <p>新しいタスクを追加できます。</p>
+                <ul>
+                    <li>テキストボックスにタスク名を入力</li>
+                    <li>タスクタイプを選択：
+                        <ul>
+                            <li><strong>単発タスク</strong>：一度きりのタスク</li>
+                            <li><strong>日次タスク</strong>：毎日繰り返すタスク</li>
+                            <li><strong>週次タスク</strong>：毎週繰り返すタスク</li>
+                        </ul>
+                    </li>
+                    <li>「追加」ボタンでタスクを作成</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>✅ タスクの完了</h3>
+                <p>タスクを完了としてマークできます。</p>
+                <ul>
+                    <li>タスクの横のチェックボックスをクリック</li>
+                    <li>完了したタスクは打ち消し線で表示</li>
+                    <li>完了時刻が自動記録される</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>🔄 繰り返しタスク</h3>
+                <p>定期的なタスクを自動で管理できます。</p>
+                <ul>
+                    <li><strong>日次タスク</strong>：毎日0時にリセット</li>
+                    <li><strong>週次タスク</strong>：毎週月曜日にリセット</li>
+                    <li>完了後も次の期間に自動で復活</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>📊 統計情報</h3>
+                <p>TODOの完了状況を視覚的に確認できます。</p>
+                <ul>
+                    <li><strong>今日の完了率</strong>：今日のタスクの完了割合</li>
+                    <li><strong>今週の完了率</strong>：今週のタスクの完了割合</li>
+                    <li><strong>今月の完了率</strong>：今月のタスクの完了割合</li>
+                    <li>グラフで視覚的に進捗を確認</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>🧹 管理機能</h3>
+                <p>完了したタスクを一括削除できます。</p>
+                <ul>
+                    <li>「完了タスクをすべて削除」ボタンで一括削除</li>
+                    <li>単発タスクのみ削除される</li>
+                    <li>繰り返しタスクは削除されない</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>💾 データ保存</h3>
+                <p>TODOデータは自動で保存されます。</p>
+                <ul>
+                    <li>ブラウザのローカルストレージに保存</li>
+                    <li>ページを再読み込みしても保持</li>
+                    <li>同じブラウザ・同じサイトでのみ利用可能</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/todo-script.js"></script>
+    <script>
+        function openHelpModal() {
+            document.getElementById('helpModal').style.display = 'block';
+        }
+
+        function closeHelpModal() {
+            document.getElementById('helpModal').style.display = 'none';
+        }
+
+        // モーダル外をクリックしたら閉じる
+        window.onclick = function(event) {
+            const modal = document.getElementById('helpModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
